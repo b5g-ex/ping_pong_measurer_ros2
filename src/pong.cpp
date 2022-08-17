@@ -11,18 +11,12 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
 
-  void echo_back(const std_msgs::msg::String::SharedPtr message_pointer) {
-    auto message = std_msgs::msg::String();
-    message.data = message_pointer->data;
-    publisher_->publish(message);
-  }
-
 public:
   Pong() : Node("pong") {
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
         "ping", rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
-          echo_back(message_pointer);
+          publisher_->publish(*message_pointer); // simply echo back
         });
 
     publisher_ = this->create_publisher<std_msgs::msg::String>(
