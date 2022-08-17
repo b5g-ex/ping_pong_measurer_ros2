@@ -1,5 +1,12 @@
 # ping_pong_measurer_ros2
 
+## TODO
+
+- [ ] ペイロードサイズ可変
+- [ ] 並列実行
+- [ ] 計測データファイル保存
+- [ ] CPU、メモリ使用率計測ノード
+
 ## Prerequisites
 
 * ROS2 foxy
