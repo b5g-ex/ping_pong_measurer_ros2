@@ -36,15 +36,23 @@ private:
   uint ping_times = 100;
   uint ping_counts = 0;
 
-  void ping() {
-    auto message = std_msgs::msg::String();
-    message.data = "ping";
+  void ping(std::string payload = "ping"s) {
+    auto message_pointer = std::make_unique<std_msgs::msg::String>();
+    message_pointer->data = payload;
 
-    publisher_->publish(message);
+    publisher_->publish(*message_pointer);
   }
+
+  void ping_for_measurement(std::string payload = "ping"s) {
+    ping(payload);
+    ++ping_counts;
+  }
+
+  void reset_ping_counts() { ping_counts = 0; }
 
   void start_measurement() {
     measurements_.emplace_back(std::chrono::system_clock::now());
+    ++measurement_counts;
   }
   void stop_measurement() {
     measurements_.back().recv_time() = std::chrono::system_clock::now();
@@ -60,26 +68,26 @@ public:
         "pong", rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr msg) {
           if (ping_counts < ping_times) {
-            ping();
-            ++ping_counts;
+            ping_for_measurement();
             return;
           }
 
           stop_measurement();
-          ++measurement_counts;
 
           if (measurement_counts < measurement_times) {
-            ping_counts = 0;
+            reset_ping_counts();
             start_measurement();
-            ping();
-            ++ping_counts;
+            ping_for_measurement();
+          } else {
+            RCLCPP_INFO(
+                this->get_logger(),
+                "measurement completed, Ctrl + C to exit this program.");
           }
         });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     start_measurement();
-    ping();
-    ++ping_counts;
+    ping_for_measurement();
   }
 
   ~Ping() {
