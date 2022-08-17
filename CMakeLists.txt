@@ -40,7 +40,15 @@ ament_target_dependencies(talker rclcpp std_msgs)
 add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
 
+add_executable(ping src/ping.cpp)
+ament_target_dependencies(ping rclcpp std_msgs)
+
+add_executable(pong src/pong.cpp)
+ament_target_dependencies(pong rclcpp std_msgs)
+
 install(TARGETS
+        ping
+        pong
         talker
         listener
         DESTINATION lib/${PROJECT_NAME})
