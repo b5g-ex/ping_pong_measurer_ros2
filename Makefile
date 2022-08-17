@@ -1,6 +1,8 @@
 SHELL := /bin/bash
 
-run_ping:
+SOURCE_DIR = src/ping_pong_measurer/src
+
+run_ping: build
 	source /opt/ros/foxy/setup.bash && \
 	source install/setup.bash && \
 	ros2 run ping_pong_measurer ping
@@ -20,6 +22,8 @@ run_listener:
 	source install/setup.bash && \
 	ros2 run ping_pong_measurer listener
 
-build:
+build: $(SOURCE_DIR)/ping.cpp $(SOURCE_DIR)/pong.cpp
 	source /opt/ros/foxy/setup.bash && \
 	colcon build --packages-select ping_pong_measurer
+
+.PHONY: build run_ping run_pong run_talker run_listener
