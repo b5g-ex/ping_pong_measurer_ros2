@@ -31,10 +31,10 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   std::vector<measurement> measurements_;
-  uint measurement_times = 100;
-  uint measurement_counts = 0;
-  uint ping_times = 100;
-  uint ping_counts = 0;
+  uint measurement_times_;
+  uint measurement_counts_ = 0;
+  uint ping_times_;
+  uint ping_counts_ = 0;
 
   void ping(std::string payload = "ping"s) {
     auto message_pointer = std::make_unique<std_msgs::msg::String>();
@@ -45,14 +45,14 @@ private:
 
   void ping_for_measurement(std::string payload = "ping"s) {
     ping(payload);
-    ++ping_counts;
+    ++ping_counts_;
   }
 
-  void reset_ping_counts() { ping_counts = 0; }
+  void reset_ping_counts() { ping_counts_ = 0; }
 
   void start_measurement() {
     measurements_.emplace_back(std::chrono::system_clock::now());
-    ++measurement_counts;
+    ++measurement_counts_;
   }
   void stop_measurement() {
     measurements_.back().recv_time() = std::chrono::system_clock::now();
@@ -67,8 +67,8 @@ public:
     this->declare_parameter("measurement_times"s, 100);
     this->declare_parameter("ping_times"s, 100);
 
-    measurement_times = this->get_parameter("measurement_times"s).as_int();
-    ping_times = this->get_parameter("ping_times"s).as_int();
+    measurement_times_ = this->get_parameter("measurement_times"s).as_int();
+    ping_times_ = this->get_parameter("ping_times"s).as_int();
 
     publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
@@ -76,14 +76,14 @@ public:
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
         pong_topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr msg) {
-          if (ping_counts < ping_times) {
+          if (ping_counts_ < ping_times_) {
             ping_for_measurement();
             return;
           }
 
           stop_measurement();
 
-          if (measurement_counts < measurement_times) {
+          if (measurement_counts_ < measurement_times_) {
             reset_ping_counts();
             start_measurement();
             ping_for_measurement();
