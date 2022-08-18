@@ -14,7 +14,7 @@ private:
 public:
   Pong() : Node("pong") {
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        "ping", rclcpp::QoS(rclcpp::KeepLast(10)),
+        "ping0"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           publisher_->publish(*message_pointer); // simply echo back
         });

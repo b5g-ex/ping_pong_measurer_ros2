@@ -100,11 +100,22 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  auto node_name = "ping_node"s;
-  auto topic_name = "ping"s;
-  auto node = std::make_shared<Ping>(node_name, topic_name);
+  auto node_counts = 1;
+  auto nodes = std::vector<std::shared_ptr<Ping>>{};
 
-  rclcpp::spin(node);
+  for (auto i = 0; i < node_counts; ++i) {
+    auto node_name = "ping_node"s + std::to_string(i);
+    auto topic_name = "ping"s + std::to_string(i);
+    nodes.push_back(std::make_shared<Ping>(node_name, topic_name));
+  }
+
+  auto thread_counts = nodes.size();
+  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(),
+                                                    thread_counts);
+  std::for_each(std::begin(nodes), std::end(nodes),
+                [&executor](auto node) { executor.add_node(node); });
+
+  executor.spin();
   rclcpp::shutdown();
   return 0;
 }
