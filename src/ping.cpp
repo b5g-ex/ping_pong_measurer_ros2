@@ -3,6 +3,7 @@
 #include <string>
 using namespace std::literals;
 
+#include "ping_pong_utils.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -59,14 +60,15 @@ private:
   }
 
 public:
-  Ping(const std::string node_name, const std::string topic_name)
+  Ping(const std::string node_name, const std::string ping_topic_name,
+       const std::string pong_topic_name)
       : Node(node_name), measurement_times(100), ping_times(100) {
 
-    publisher_ = this->create_publisher<std_msgs::msg::String>(topic_name,
+    publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
 
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        "pong", rclcpp::QoS(rclcpp::KeepLast(10)),
+        pong_topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr msg) {
           if (ping_counts < ping_times) {
             ping_for_measurement();
@@ -96,13 +98,12 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  auto node_counts = 1;
+  auto node_counts = 10;
   auto nodes = std::vector<std::shared_ptr<Ping>>{};
 
   for (auto i = 0; i < node_counts; ++i) {
-    auto node_name = "ping_node"s + std::to_string(i);
-    auto topic_name = "ping"s + std::to_string(i);
-    nodes.push_back(std::make_shared<Ping>(node_name, topic_name));
+    nodes.push_back(
+        std::make_shared<Ping>(ping_node_name(i), ping_topic_name(i), pong_topic_name(i)));
   }
 
   auto thread_counts = nodes.size();
