@@ -107,7 +107,7 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  auto node_counts = 10;
+  auto node_counts = get_node_counts_from_option(argc, argv);
   auto nodes = std::vector<std::shared_ptr<Ping>>{};
 
   for (auto i = 0; i < node_counts; ++i) {
