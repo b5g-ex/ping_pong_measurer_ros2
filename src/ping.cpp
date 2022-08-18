@@ -107,18 +107,18 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  auto node_counts = get_node_counts_from_option(argc, argv);
-  auto nodes = std::vector<std::shared_ptr<Ping>>{};
+  const auto node_counts = get_node_counts_from_option(argc, argv);
+  auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
 
-  for (auto i = 0; i < node_counts; ++i) {
-    nodes.push_back(
-        std::make_shared<Ping>(ping_node_name(i), ping_topic_name(i), pong_topic_name(i)));
+  for (auto i = 0u; i < nodes.size(); ++i) {
+    nodes.at(i) = std::make_shared<Ping>(ping_node_name(i), ping_topic_name(i), pong_topic_name(i));
   }
 
-  auto thread_counts = nodes.size();
+  const auto thread_counts = nodes.size();
   rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), thread_counts);
-  std::for_each(std::begin(nodes), std::end(nodes),
-                [&executor](auto node) { executor.add_node(node); });
+  for (const auto node : nodes) {
+    executor.add_node(node);
+  }
 
   executor.spin();
   rclcpp::shutdown();
