@@ -19,8 +19,8 @@ public:
           publisher_->publish(*message_pointer); // simply echo back
         });
 
-    publisher_ = this->create_publisher<std_msgs::msg::String>(
-        "pong", rclcpp::QoS(rclcpp::KeepLast(10)));
+    publisher_ =
+        this->create_publisher<std_msgs::msg::String>("pong", rclcpp::QoS(rclcpp::KeepLast(10)));
   }
 };
 

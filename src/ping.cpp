@@ -19,9 +19,8 @@ class Ping : public rclcpp::Node {
     std::chrono::system_clock::time_point &recv_time() { return recv_time_; }
 
     int took_time() {
-      auto took_time = std::chrono::duration_cast<std::chrono::microseconds>(
-                           recv_time_ - send_time_)
-                           .count();
+      auto took_time =
+          std::chrono::duration_cast<std::chrono::microseconds>(recv_time_ - send_time_).count();
       std::cout << took_time << "\n"s;
       return took_time;
     }
@@ -63,8 +62,8 @@ public:
   Ping(const std::string node_name, const std::string topic_name)
       : Node(node_name), measurement_times(100), ping_times(100) {
 
-    publisher_ = this->create_publisher<std_msgs::msg::String>(
-        topic_name, rclcpp::QoS(rclcpp::KeepLast(10)));
+    publisher_ = this->create_publisher<std_msgs::msg::String>(topic_name,
+                                                               rclcpp::QoS(rclcpp::KeepLast(10)));
 
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
         "pong", rclcpp::QoS(rclcpp::KeepLast(10)),
@@ -81,9 +80,8 @@ public:
             start_measurement();
             ping_for_measurement();
           } else {
-            RCLCPP_INFO(
-                this->get_logger(),
-                "measurement completed, Ctrl + C to exit this program.");
+            RCLCPP_INFO(this->get_logger(),
+                        "measurement completed, Ctrl + C to exit this program.");
           }
         });
 
@@ -92,9 +90,7 @@ public:
     ping_for_measurement();
   }
 
-  ~Ping() {
-    RCLCPP_INFO(this->get_logger(), "destructed %d"s, measurements_.size());
-  }
+  ~Ping() { RCLCPP_INFO(this->get_logger(), "destructed %d"s, measurements_.size()); }
 };
 
 int main(int argc, char *argv[]) {
@@ -110,8 +106,7 @@ int main(int argc, char *argv[]) {
   }
 
   auto thread_counts = nodes.size();
-  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(),
-                                                    thread_counts);
+  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), thread_counts);
   std::for_each(std::begin(nodes), std::end(nodes),
                 [&executor](auto node) { executor.add_node(node); });
 
