@@ -62,7 +62,13 @@ private:
 public:
   Ping(const std::string node_name, const std::string ping_topic_name,
        const std::string pong_topic_name)
-      : Node(node_name), measurement_times(100), ping_times(100) {
+      : Node(node_name) {
+
+    this->declare_parameter("measurement_times"s, 100);
+    this->declare_parameter("ping_times"s, 100);
+
+    measurement_times = this->get_parameter("measurement_times"s).as_int();
+    ping_times = this->get_parameter("ping_times"s).as_int();
 
     publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
