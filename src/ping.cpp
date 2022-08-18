@@ -35,6 +35,7 @@ private:
   uint measurement_counts_ = 0;
   uint ping_times_;
   uint ping_counts_ = 0;
+  uint payload_size_byte_;
 
   void ping(std::string payload = "ping"s) {
     auto message_pointer = std::make_unique<std_msgs::msg::String>();
@@ -66,18 +67,20 @@ public:
 
     this->declare_parameter("measurement_times"s, 100);
     this->declare_parameter("ping_times"s, 100);
+    this->declare_parameter("payload_size_byte"s, 10);
 
     measurement_times_ = this->get_parameter("measurement_times"s).as_int();
     ping_times_ = this->get_parameter("ping_times"s).as_int();
+    payload_size_byte_ = this->get_parameter("payload_size_byte"s).as_int();
 
     publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
 
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
         pong_topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
-        [this](const std_msgs::msg::String::SharedPtr msg) {
+        [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           if (ping_counts_ < ping_times_) {
-            ping_for_measurement();
+            ping_for_measurement(message_pointer->data);
             return;
           }
 
@@ -86,7 +89,7 @@ public:
           if (measurement_counts_ < measurement_times_) {
             reset_ping_counts();
             start_measurement();
-            ping_for_measurement();
+            ping_for_measurement(message_pointer->data);
           } else {
             RCLCPP_INFO(this->get_logger(),
                         "measurement completed, Ctrl + C to exit this program.");
@@ -95,7 +98,7 @@ public:
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     start_measurement();
-    ping_for_measurement();
+    ping_for_measurement(std::string(payload_size_byte_, 'a'));
   }
 
   ~Ping() { RCLCPP_INFO(this->get_logger(), "destructed %d"s, measurements_.size()); }
