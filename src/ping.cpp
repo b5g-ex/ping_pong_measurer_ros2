@@ -60,9 +60,11 @@ private:
   }
 
 public:
-  Ping() : Node("ping"), measurement_times(100), ping_times(100) {
+  Ping(const std::string node_name, const std::string topic_name)
+      : Node(node_name), measurement_times(100), ping_times(100) {
+
     publisher_ = this->create_publisher<std_msgs::msg::String>(
-        "ping", rclcpp::QoS(rclcpp::KeepLast(10)));
+        topic_name, rclcpp::QoS(rclcpp::KeepLast(10)));
 
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
         "pong", rclcpp::QoS(rclcpp::KeepLast(10)),
@@ -97,7 +99,12 @@ public:
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<Ping>());
+
+  auto node_name = "ping_node"s;
+  auto topic_name = "ping"s;
+  auto node = std::make_shared<Ping>(node_name, topic_name);
+
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }
