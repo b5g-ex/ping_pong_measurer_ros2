@@ -1,3 +1,6 @@
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -20,15 +23,13 @@ class Ping : public rclcpp::Node {
     std::chrono::system_clock::time_point &recv_time() { return recv_time_; }
 
     int took_time() {
-      auto took_time =
-          std::chrono::duration_cast<std::chrono::microseconds>(recv_time_ - send_time_).count();
-      std::cout << took_time << "\n"s;
-      return took_time;
+      return std::chrono::duration_cast<std::chrono::microseconds>(recv_time_ - send_time_).count();
     }
   };
 
 private:
   uint id_;
+  std::filesystem::path data_directory_path_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   std::vector<measurement> measurements_;
@@ -56,13 +57,33 @@ private:
     measurements_.emplace_back(std::chrono::system_clock::now());
     ++measurement_counts_;
   }
-  void stop_measurement() {
-    measurements_.back().recv_time() = std::chrono::system_clock::now();
-    measurements_.back().took_time();
+
+  void stop_measurement() { measurements_.back().recv_time() = std::chrono::system_clock::now(); }
+
+  std::filesystem::path csv_file_path() {
+    // zero padding, csv_file_name is like 0100.csv
+    const auto id_string = std::to_string(id_);
+    const uint padding_digits = 4;
+    const auto csv_file_name =
+        std::string(padding_digits - id_string.length(), '0') + id_string + ".csv"s;
+    return data_directory_path_ / csv_file_name;
+  }
+
+  void dump_measurements_to_csv(const std::filesystem::path &csv_file_path) {
+    std::ofstream csv_file_stream(csv_file_path.string());
+
+    // header
+    csv_file_stream << "took_time[ms]"s
+                    << "\n"s;
+    // body
+    for (auto measurement : measurements_) {
+      csv_file_stream << std::to_string(measurement.took_time() / 1000.0) << "\n"s;
+    }
   }
 
 public:
-  Ping(const uint id) : Node(ping_node_name(id)), id_(id) {
+  Ping(const uint id, const std::filesystem::path data_directory_path)
+      : Node(ping_node_name(id)), id_(id), data_directory_path_(data_directory_path) {
 
     this->declare_parameter("measurement_times"s, 100);
     this->declare_parameter("ping_times"s, 100);
@@ -100,17 +121,21 @@ public:
     ping_for_measurement(std::string(payload_size_byte_, 'a'));
   }
 
-  ~Ping() { RCLCPP_INFO(this->get_logger(), "destructed %d"s, measurements_.size()); }
+  ~Ping() {
+    RCLCPP_INFO(this->get_logger(), "destructed, measurements size is %d."s, measurements_.size());
+    dump_measurements_to_csv(csv_file_path());
+  }
 };
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
+  const auto data_directory_path = create_data_directory();
   const auto node_counts = get_node_counts_from_option(argc, argv);
   auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
-    nodes.at(i) = std::make_shared<Ping>(i);
+    nodes.at(i) = std::make_shared<Ping>(i, data_directory_path);
   }
 
   const auto thread_counts = nodes.size();
