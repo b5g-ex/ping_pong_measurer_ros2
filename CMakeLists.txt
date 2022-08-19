@@ -41,9 +41,11 @@ add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
 
 add_executable(ping src/ping.cpp)
+target_compile_features(ping PUBLIC cxx_std_17)
 ament_target_dependencies(ping rclcpp std_msgs)
 
 add_executable(pong src/pong.cpp)
+target_compile_features(pong PUBLIC cxx_std_17)
 ament_target_dependencies(pong rclcpp std_msgs)
 
 install(TARGETS
