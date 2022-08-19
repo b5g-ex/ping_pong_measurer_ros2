@@ -28,6 +28,7 @@ class Ping : public rclcpp::Node {
   };
 
 private:
+  uint id_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   std::vector<measurement> measurements_;
@@ -61,9 +62,7 @@ private:
   }
 
 public:
-  Ping(const std::string node_name, const std::string ping_topic_name,
-       const std::string pong_topic_name)
-      : Node(node_name) {
+  Ping(const uint id) : Node(ping_node_name(id)), id_(id) {
 
     this->declare_parameter("measurement_times"s, 100);
     this->declare_parameter("ping_times"s, 100);
@@ -73,11 +72,11 @@ public:
     ping_times_ = this->get_parameter("ping_times"s).as_int();
     payload_size_byte_ = this->get_parameter("payload_size_byte"s).as_int();
 
-    publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name,
+    publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name(id_),
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
 
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        pong_topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
+        pong_topic_name(id_), rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           if (ping_counts_ < ping_times_) {
             ping_for_measurement(message_pointer->data);
@@ -111,7 +110,7 @@ int main(int argc, char *argv[]) {
   auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
-    nodes.at(i) = std::make_shared<Ping>(ping_node_name(i), ping_topic_name(i), pong_topic_name(i));
+    nodes.at(i) = std::make_shared<Ping>(i);
   }
 
   const auto thread_counts = nodes.size();

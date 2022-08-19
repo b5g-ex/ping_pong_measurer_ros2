@@ -9,20 +9,19 @@ using namespace std::literals;
 
 class Pong : public rclcpp::Node {
 private:
+  uint id_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
 
 public:
-  Pong(const std::string node_name, const std::string pong_topic_name,
-       const std::string ping_topic_name)
-      : Node(node_name) {
+  Pong(const uint id) : Node(pong_node_name(id)), id_(id) {
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        ping_topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
+        ping_topic_name(id_), rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           publisher_->publish(*message_pointer); // simply echo back
         });
 
-    publisher_ = this->create_publisher<std_msgs::msg::String>(pong_topic_name,
+    publisher_ = this->create_publisher<std_msgs::msg::String>(pong_topic_name(id_),
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
   }
 };
@@ -34,7 +33,7 @@ int main(int argc, char *argv[]) {
   auto nodes = std::vector<std::shared_ptr<Pong>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
-    nodes.at(i) = std::make_shared<Pong>(pong_node_name(i), pong_topic_name(i), ping_topic_name(i));
+    nodes.at(i) = std::make_shared<Pong>(i);
   }
 
   const auto thread_counts = nodes.size();
