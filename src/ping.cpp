@@ -37,7 +37,7 @@ private:
   uint measurement_counts_ = 0;
   uint ping_times_;
   uint ping_counts_ = 0;
-  uint payload_size_byte_;
+  uint payload_bytes_;
 
   void ping(std::string payload = "ping"s) {
     auto message_pointer = std::make_unique<std_msgs::msg::String>();
@@ -82,16 +82,12 @@ private:
   }
 
 public:
-  Ping(const uint id, const std::filesystem::path data_directory_path)
+  Ping(const uint id, const std::filesystem::path data_directory_path, ppm_options options)
       : Node(ping_node_name(id)), id_(id), data_directory_path_(data_directory_path) {
 
-    this->declare_parameter("measurement_times"s, 100);
-    this->declare_parameter("ping_times"s, 100);
-    this->declare_parameter("payload_size_byte"s, 10);
-
-    measurement_times_ = this->get_parameter("measurement_times"s).as_int();
-    ping_times_ = this->get_parameter("ping_times"s).as_int();
-    payload_size_byte_ = this->get_parameter("payload_size_byte"s).as_int();
+    measurement_times_ = get_measurement_times(options);
+    ping_times_ = 100;
+    payload_bytes_ = get_payload_bytes(options);
 
     publisher_ = this->create_publisher<std_msgs::msg::String>(ping_topic_name(id_),
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
@@ -118,7 +114,7 @@ public:
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     start_measurement();
-    ping_for_measurement(std::string(payload_size_byte_, 'a'));
+    ping_for_measurement(std::string(payload_bytes_, 'a'));
   }
 
   ~Ping() {
@@ -130,12 +126,14 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  const auto data_directory_path = create_data_directory();
-  const auto node_counts = get_node_counts_from_option(argc, argv);
+  const ppm_options options = get_options(argc, argv);
+
+  const auto node_counts = get_node_counts(options);
+  const auto data_directory_path = create_data_directory(options);
   auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
-    nodes.at(i) = std::make_shared<Ping>(i, data_directory_path);
+    nodes.at(i) = std::make_shared<Ping>(i, data_directory_path, options);
   }
 
   const auto thread_counts = nodes.size();

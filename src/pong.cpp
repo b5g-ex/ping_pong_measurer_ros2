@@ -29,7 +29,9 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  const auto node_counts = get_node_counts_from_option(argc, argv);
+  const ppm_options options = get_options(argc, argv);
+
+  const auto node_counts = get_node_counts(options);
   auto nodes = std::vector<std::shared_ptr<Pong>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {

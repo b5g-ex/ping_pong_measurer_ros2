@@ -3,20 +3,35 @@
 #include <string>
 using namespace std::literals;
 
+using ppm_options = std::tuple<uint, uint, uint>;
+
 inline std::string ping_node_name(uint id) { return "ping_node"s + std::to_string(id); }
 inline std::string pong_node_name(uint id) { return "pong_node"s + std::to_string(id); }
 
 inline std::string ping_topic_name(uint id) { return "ping"s + std::to_string(id); }
 inline std::string pong_topic_name(uint id) { return "pong"s + std::to_string(id); }
 
-inline int get_node_counts_from_option(int argc, char *argv[], int when_no_option = 1) {
+inline ppm_options get_options(int argc, char *argv[]) {
+  uint node_counts = 1;
+  uint payload_bytes = 10;
+  uint measurement_times = 100;
+
   for (auto i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "--node-counts"s) {
-      return std::stoi(argv[++i]);
+      node_counts = std::stoi(argv[++i]);
+    } else if (std::string(argv[i]) == "--payload-bytes"s) {
+      payload_bytes = std::stoi(argv[++i]);
+    } else if (std::string(argv[i]) == "--measurement-times"s) {
+      measurement_times = std::stoi(argv[++i]);
     }
   }
-  return when_no_option;
+
+  return {node_counts, payload_bytes, measurement_times};
 }
+
+inline uint get_node_counts(ppm_options options) { return std::get<0>(options); }
+inline uint get_payload_bytes(ppm_options options) { return std::get<1>(options); }
+inline uint get_measurement_times(ppm_options options) { return std::get<2>(options); }
 
 inline std::string get_datetime_utc_now_string(
     std::chrono::system_clock::time_point time_point = std::chrono::system_clock::now()) {
@@ -29,9 +44,15 @@ inline std::string get_datetime_utc_now_string(
   return std::string(buffer);
 }
 
-inline std::filesystem::path create_data_directory() {
-  const auto data_directory_path =
-      std::filesystem::current_path() / "data"s / get_datetime_utc_now_string();
+inline std::filesystem::path create_data_directory(ppm_options options) {
+  const auto [node_counts, payload_bytes, measurement_times] = options;
+  const auto nc = std::to_string(node_counts);
+  const auto pb = std::to_string(payload_bytes);
+  const auto mt = std::to_string(measurement_times);
+
+  const auto directory_name =
+      get_datetime_utc_now_string() + "_"s + "nc"s + nc + "_"s + "pb"s + pb + "_"s + "mt"s + mt;
+  const auto data_directory_path = std::filesystem::current_path() / "data"s / directory_name;
 
   std::filesystem::create_directories(data_directory_path);
   return data_directory_path;
