@@ -119,7 +119,10 @@ public:
 
   ~Ping() {
     RCLCPP_INFO(this->get_logger(), "destructed, measurements size is %d."s, measurements_.size());
-    dump_measurements_to_csv(csv_file_path());
+
+    if (measurements_.size() > 0) {
+      dump_measurements_to_csv(csv_file_path());
+    }
   }
 };
 
