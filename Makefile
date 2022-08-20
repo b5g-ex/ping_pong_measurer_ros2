@@ -2,6 +2,11 @@ SHELL := /bin/bash
 
 SOURCE_DIR = src/ping_pong_measurer/src
 
+starter: build
+	source /opt/ros/foxy/setup.bash && \
+	source install/setup.bash && \
+	ros2 run ping_pong_measurer starter
+
 run_ping: build
 	source /opt/ros/foxy/setup.bash && \
 	source install/setup.bash && \

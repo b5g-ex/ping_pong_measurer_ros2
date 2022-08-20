@@ -32,6 +32,7 @@ private:
   std::filesystem::path data_directory_path_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr command_subscriber_;
   std::vector<measurement> measurements_;
   uint measurement_times_;
   uint measurement_counts_ = 0;
@@ -112,9 +113,15 @@ public:
           }
         });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    start_measurement();
-    ping_for_measurement(std::string(payload_bytes_, 'a'));
+    command_subscriber_ = this->create_subscription<std_msgs::msg::String>(
+        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)),
+        [this](const std_msgs::msg::String::SharedPtr message_pointer) {
+          const auto command = message_pointer->data;
+          if (command == "start"s) {
+            start_measurement();
+            ping_for_measurement(std::string(payload_bytes_, 'a'));
+          }
+        });
   }
 
   ~Ping() {

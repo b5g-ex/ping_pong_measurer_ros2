@@ -48,9 +48,14 @@ add_executable(pong src/pong.cpp)
 target_compile_features(pong PUBLIC cxx_std_17)
 ament_target_dependencies(pong rclcpp std_msgs)
 
+add_executable(starter src/starter.cpp)
+target_compile_features(starter PUBLIC cxx_std_17)
+ament_target_dependencies(starter rclcpp std_msgs)
+
 install(TARGETS
         ping
         pong
+        starter
         talker
         listener
         DESTINATION lib/${PROJECT_NAME})
