@@ -66,6 +66,11 @@ inline std::filesystem::path create_data_directory(std::string directory_name) {
   return data_directory_path;
 }
 
+inline std::filesystem::path create_data_directory(ppm_options options) {
+  const auto data_directory_name = create_data_directory_name(options);
+  return create_data_directory(data_directory_name);
+}
+
 std::string exec(const std::string command) {
   std::array<char, 256> buffer;
   std::string result;
