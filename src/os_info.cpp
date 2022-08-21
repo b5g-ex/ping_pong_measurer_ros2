@@ -12,10 +12,14 @@ using namespace std::chrono_literals;
 class OsInfo : public rclcpp::Node {
   class cpu_info {
   private:
+    std::chrono::system_clock::time_point measurement_time_;
     std::string data_;
 
   public:
-    cpu_info(std::string data) : data_(data) {}
+    cpu_info(std::chrono::system_clock::time_point measurement_time, std::string data)
+        : measurement_time_(measurement_time), data_(data) {}
+
+    std::chrono::system_clock::time_point measurement_time() const { return measurement_time_; }
     std::string data() const { return data_; }
 
     static std::string get_cpu_line() {
@@ -42,11 +46,15 @@ class OsInfo : public rclcpp::Node {
       std::ofstream csv_file_stream(csv_file_path.string());
 
       // header, see man 5 proc, /proc/stat
-      csv_file_stream << "user,nice,system,idle,iowait,irq,softirq,steal,guest,guest_nice"
+      csv_file_stream << "measurement_time[ms]"
+                      << ","s
+                      << "user,nice,system,idle,iowait,irq,softirq,steal,guest,guest_nice"
+                      << ","s
                       << "\n"s;
       // body
       for (auto cpu_info : cpu_infos) {
-        csv_file_stream << cpu_info.data() << "\n"s;
+        const auto measurement_time = time_since_epoch_milliseconds(cpu_info.measurement_time());
+        csv_file_stream << std::to_string(measurement_time) << ","s << cpu_info.data() << "\n"s;
       }
 
       cpu_infos.clear();
@@ -55,10 +63,14 @@ class OsInfo : public rclcpp::Node {
 
   class memory_info {
   private:
+    std::chrono::system_clock::time_point measurement_time_;
     std::string data_;
 
   public:
-    memory_info(std::string data) : data_(data) {}
+    memory_info(std::chrono::system_clock::time_point measurement_time, std::string data)
+        : measurement_time_(measurement_time), data_(data) {}
+
+    std::chrono::system_clock::time_point measurement_time() const { return measurement_time_; }
     std::string data() const { return data_; }
 
     static std::string get_memory_line() {
@@ -88,11 +100,16 @@ class OsInfo : public rclcpp::Node {
       auto csv_file_path = data_directory_path / "memory.csv";
       std::ofstream csv_file_stream(csv_file_path.string());
 
-      csv_file_stream << "total,used,free,shared,buff/cache,available"
+      csv_file_stream << "measurement_time[ms]"
+                      << ","s
+                      << "total,used,free,shared,buff/cache,available"
+                      << ","s
                       << "\n"s;
       // body
       for (auto memory_info : memory_infos) {
-        csv_file_stream << memory_info.data() << "\n"s;
+        const auto measurement_time = time_since_epoch_milliseconds(memory_info.measurement_time());
+        csv_file_stream << std::to_string(measurement_time) << ","s << memory_info.data() << ","s
+                        << "\n"s;
       }
 
       memory_infos.clear();
@@ -124,13 +141,13 @@ private:
   void measure_cpu() {
     auto line = cpu_info::get_cpu_line();
     line = cpu_info::convert_cpu_line(line);
-    cpu_infos_.emplace_back(line);
+    cpu_infos_.emplace_back(std::chrono::system_clock::now(), line);
   }
 
   void measure_memory() {
     auto line = memory_info::get_memory_line();
     line = memory_info::convert_memory_line(line);
-    memory_infos_.emplace_back(line);
+    memory_infos_.emplace_back(std::chrono::system_clock::now(), line);
   }
 
 public:

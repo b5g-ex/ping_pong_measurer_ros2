@@ -32,6 +32,7 @@ class Ping : public rclcpp::Node {
   public:
     measurement(std::chrono::system_clock::time_point now) : send_time_(now) {}
 
+    std::chrono::system_clock::time_point &send_time() { return send_time_; }
     std::chrono::system_clock::time_point &recv_time() { return recv_time_; }
 
     int took_time() {
@@ -81,11 +82,23 @@ private:
     std::ofstream csv_file_stream(csv_file_path.string());
 
     // header
-    csv_file_stream << "took_time[ms]"s
+    csv_file_stream << "send_time[ms]"s
+                    << ","s
+                    << "recv_time[ms]"s
+                    << ","s
+                    << "took_time[ms]"s
+                    << ","s
                     << "\n"s;
+
     // body
     for (auto measurement : measurements_) {
-      csv_file_stream << std::to_string(measurement.took_time() / 1000.0) << "\n"s;
+
+      const auto send_time = time_since_epoch_milliseconds(measurement.send_time());
+      const auto recv_time = time_since_epoch_milliseconds(measurement.recv_time());
+
+      csv_file_stream << std::to_string(send_time) << ","s << std::to_string(recv_time) << ","s
+                      << std::to_string(measurement.took_time() / 1000.0) << ","s
+                      << "\n"s;
     }
 
     measurements_.clear();

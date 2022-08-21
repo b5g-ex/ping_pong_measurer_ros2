@@ -50,6 +50,10 @@ inline std::string get_datetime_utc_now_string(
   return std::string(buffer);
 }
 
+inline auto time_since_epoch_milliseconds(const std::chrono::system_clock::time_point &tp) {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count();
+}
+
 inline std::string create_data_directory_name(ppm_options options) {
   const auto [node_counts, payload_bytes, measurement_times] = options;
   const auto nc = std::to_string(node_counts);
