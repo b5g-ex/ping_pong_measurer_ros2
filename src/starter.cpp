@@ -6,12 +6,21 @@ using namespace std::literals;
 class Starter : public rclcpp::Node {
 private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
 
 public:
   Starter(std::string node_name) : Node(node_name) {
     const auto topic_name = "command"s;
     publisher_ = this->create_publisher<std_msgs::msg::String>(topic_name,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
+    subscriber_ = this->create_subscription<std_msgs::msg::String>(
+        topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
+        [this](const std_msgs::msg::String::SharedPtr message_pointer) {
+          const auto data = message_pointer->data;
+          if (data == "measurements completed"s) {
+            stop_os_info_measurement();
+          }
+        });
   }
 
   void publish_impl(const std::string data) {
@@ -21,10 +30,9 @@ public:
   }
 
   void start_measurement() { publish_impl("start"s); }
-
-  void start_os_info_measurement() { publish_impl("start os info measurement"s); }
-
   void stop_measurement() { publish_impl("stop"s); }
+  void start_os_info_measurement() { publish_impl("start os info measurement"s); }
+  void stop_os_info_measurement() { publish_impl("stop os info measurement"s); }
 };
 
 int main(int argc, char *argv[]) {

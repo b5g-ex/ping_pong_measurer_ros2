@@ -10,6 +10,9 @@ using namespace std::literals;
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
+static int measurements_completed_node_counts_g = 0;
+static int node_counts_g = 0;
+
 class Ping : public rclcpp::Node {
 
   class measurement {
@@ -32,7 +35,8 @@ private:
   std::filesystem::path data_directory_path_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr command_subscriber_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr starter_publisher_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement> measurements_;
   uint measurement_times_;
   uint measurement_counts_ = 0;
@@ -82,6 +86,12 @@ private:
     }
   }
 
+  void tell_measurements_completed_to_starter() {
+    auto message = std_msgs::msg::String();
+    message.data = "measurements completed"s;
+    starter_publisher_->publish(message);
+  }
+
 public:
   Ping(const uint id, const std::filesystem::path data_directory_path, ppm_options options)
       : Node(ping_node_name(id)), id_(id), data_directory_path_(data_directory_path) {
@@ -108,16 +118,24 @@ public:
             start_measurement();
             ping_for_measurement(message_pointer->data);
           } else {
+            if (++measurements_completed_node_counts_g != node_counts_g)
+              return;
+
+            tell_measurements_completed_to_starter();
             RCLCPP_INFO(this->get_logger(),
-                        "measurement completed, Ctrl + C to exit this program.");
+                        "measurements completed, Ctrl + C to exit this program.");
           }
         });
 
-    command_subscriber_ = this->create_subscription<std_msgs::msg::String>(
+    starter_publisher_ = this->create_publisher<std_msgs::msg::String>(
+        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)));
+
+    starter_subscriber_ = this->create_subscription<std_msgs::msg::String>(
         "command"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
+            measurements_completed_node_counts_g = 0;
             start_measurement();
             ping_for_measurement(std::string(payload_bytes_, 'a'));
           }
@@ -138,10 +156,10 @@ int main(int argc, char *argv[]) {
 
   const ppm_options options = get_options(argc, argv);
 
-  const auto node_counts = get_node_counts(options);
+  node_counts_g = get_node_counts(options);
   const auto data_directory_name = create_data_directory_name(options);
   const auto data_directory_path = create_data_directory(data_directory_name);
-  auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
+  auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts_g);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
     nodes.at(i) = std::make_shared<Ping>(i, data_directory_path, options);
