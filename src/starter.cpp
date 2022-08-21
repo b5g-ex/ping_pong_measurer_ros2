@@ -17,6 +17,7 @@ public:
         topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto data = message_pointer->data;
+          std::cout << data << std::endl;
           if (data == "measurements completed"s) {
             stop_os_info_measurement();
           }
