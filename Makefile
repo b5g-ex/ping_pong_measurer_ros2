@@ -32,7 +32,7 @@ run_listener:
 	source install/setup.bash && \
 	ros2 run ping_pong_measurer listener
 
-build: $(SOURCE_DIR)/ping.cpp $(SOURCE_DIR)/pong.cpp $(SOURCE_DIR)/os_info.cpp
+build: $(SOURCE_DIR)/ping.cpp $(SOURCE_DIR)/pong.cpp $(SOURCE_DIR)/starter.cpp $(SOURCE_DIR)/os_info.cpp
 	source /opt/ros/foxy/setup.bash && \
 	colcon build --packages-select ping_pong_measurer
 
