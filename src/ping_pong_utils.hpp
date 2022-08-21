@@ -1,5 +1,11 @@
+#include <algorithm>
+#include <array>
 #include <chrono>
+#include <cstdio>
 #include <filesystem>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <string>
 using namespace std::literals;
 
@@ -58,4 +64,29 @@ inline std::filesystem::path create_data_directory(std::string directory_name) {
 
   std::filesystem::create_directories(data_directory_path);
   return data_directory_path;
+}
+
+std::string exec(const std::string command) {
+  std::array<char, 256> buffer;
+  std::string result;
+  // custom deleter
+  std::unique_ptr<std::FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+  if (!pipe) {
+    throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result += buffer.data();
+  }
+
+  return result;
+}
+
+std::string remove_multiple_space(std::string line) {
+  auto is_multiple_space = [](char const &lhs, char const &rhs) -> bool {
+    return lhs == rhs && iswspace(lhs);
+  };
+  auto iterator = std::unique(line.begin(), line.end(), is_multiple_space);
+  line.erase(iterator, line.end());
+
+  return line;
 }
