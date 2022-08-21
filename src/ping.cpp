@@ -1,3 +1,4 @@
+#include <cassert>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -45,7 +46,6 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr starter_publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement> measurements_;
-  uint measurement_counts_ = 0;
   uint ping_counts_ = 0;
 
   void ping(std::string payload = "ping"s) {
@@ -62,10 +62,7 @@ private:
 
   void reset_ping_counts() { ping_counts_ = 0; }
 
-  void start_repeat_measurement() {
-    measurements_.emplace_back(std::chrono::system_clock::now());
-    ++measurement_counts_;
-  }
+  void start_repeat_measurement() { measurements_.emplace_back(std::chrono::system_clock::now()); }
 
   void stop_repeat_measurement() {
     measurements_.back().recv_time() = std::chrono::system_clock::now();
@@ -90,6 +87,8 @@ private:
     for (auto measurement : measurements_) {
       csv_file_stream << std::to_string(measurement.took_time() / 1000.0) << "\n"s;
     }
+
+    measurements_.clear();
   }
 
   void tell_measurements_completed_to_starter() {
@@ -126,10 +125,12 @@ public:
           stop_repeat_measurement();
           reset_ping_counts();
 
-          if (measurement_counts_ < measurement_times_g) {
+          if (measurements_.size() < measurement_times_g) {
             start_repeat_measurement();
             ping_for_measurement(message_pointer->data);
           } else {
+            assert(measurements_.size() == measurement_times_g);
+
             dump_measurements_to_csv(csv_file_path(data_directory_path_g));
 
             if (++measurements_completed_node_counts_g != get_node_counts(options_g))
