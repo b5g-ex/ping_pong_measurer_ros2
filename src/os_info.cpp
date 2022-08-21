@@ -37,7 +37,7 @@ class OsInfo : public rclcpp::Node {
     }
 
     static void dump_to_csv(std::filesystem::path data_directory_path,
-                            const std::vector<cpu_info> &cpu_infos) {
+                            std::vector<cpu_info> &cpu_infos) {
       auto csv_file_path = data_directory_path / "cpu.csv";
       std::ofstream csv_file_stream(csv_file_path.string());
 
@@ -48,6 +48,8 @@ class OsInfo : public rclcpp::Node {
       for (auto cpu_info : cpu_infos) {
         csv_file_stream << cpu_info.data() << "\n"s;
       }
+
+      cpu_infos.clear();
     }
   };
 
@@ -82,7 +84,7 @@ class OsInfo : public rclcpp::Node {
     }
 
     static void dump_to_csv(std::filesystem::path data_directory_path,
-                            const std::vector<memory_info> &memory_infos) {
+                            std::vector<memory_info> &memory_infos) {
       auto csv_file_path = data_directory_path / "memory.csv";
       std::ofstream csv_file_stream(csv_file_path.string());
 
@@ -92,6 +94,8 @@ class OsInfo : public rclcpp::Node {
       for (auto memory_info : memory_infos) {
         csv_file_stream << memory_info.data() << "\n"s;
       }
+
+      memory_infos.clear();
     }
   };
 
