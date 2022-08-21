@@ -44,14 +44,16 @@ inline std::string get_datetime_utc_now_string(
   return std::string(buffer);
 }
 
-inline std::filesystem::path create_data_directory(ppm_options options) {
+inline std::string create_data_directory_name(ppm_options options) {
   const auto [node_counts, payload_bytes, measurement_times] = options;
   const auto nc = std::to_string(node_counts);
   const auto pb = std::to_string(payload_bytes);
   const auto mt = std::to_string(measurement_times);
 
-  const auto directory_name =
-      get_datetime_utc_now_string() + "_"s + "nc"s + nc + "_"s + "pb"s + pb + "_"s + "mt"s + mt;
+  return get_datetime_utc_now_string() + "_"s + "nc"s + nc + "_"s + "pb"s + pb + "_"s + "mt"s + mt;
+}
+
+inline std::filesystem::path create_data_directory(std::string directory_name) {
   const auto data_directory_path = std::filesystem::current_path() / "data"s / directory_name;
 
   std::filesystem::create_directories(data_directory_path);

@@ -139,7 +139,8 @@ int main(int argc, char *argv[]) {
   const ppm_options options = get_options(argc, argv);
 
   const auto node_counts = get_node_counts(options);
-  const auto data_directory_path = create_data_directory(options);
+  const auto data_directory_name = create_data_directory_name(options);
+  const auto data_directory_path = create_data_directory(data_directory_name);
   auto nodes = std::vector<std::shared_ptr<Ping>>(node_counts);
 
   for (auto i = 0u; i < nodes.size(); ++i) {
