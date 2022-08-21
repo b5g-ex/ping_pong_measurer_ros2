@@ -14,24 +14,17 @@ public:
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
   }
 
-  void start_measurement() {
+  void publish_impl(const std::string data) {
     auto message = std_msgs::msg::String();
-    message.data = "start"s;
+    message.data = data;
     publisher_->publish(message);
   }
 
-  void start_os_info_measurement() {
-    auto message = std_msgs::msg::String();
-    message.data = "start os info measurement"s;
-    publisher_->publish(message);
-  }
+  void start_measurement() { publish_impl("start"s); }
 
-  void stop_measurement() {
-    std::cout << "stop measurement" << std::endl;
-    auto message = std_msgs::msg::String();
-    message.data = "stop"s;
-    publisher_->publish(message);
-  }
+  void start_os_info_measurement() { publish_impl("start os info measurement"s); }
+
+  void stop_measurement() { publish_impl("stop"s); }
 };
 
 int main(int argc, char *argv[]) {
