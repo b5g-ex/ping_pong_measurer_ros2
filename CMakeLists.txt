@@ -52,7 +52,12 @@ add_executable(starter src/starter.cpp)
 target_compile_features(starter PUBLIC cxx_std_17)
 ament_target_dependencies(starter rclcpp std_msgs)
 
+add_executable(os_info src/os_info.cpp)
+target_compile_features(os_info PUBLIC cxx_std_17)
+ament_target_dependencies(os_info rclcpp std_msgs)
+
 install(TARGETS
+        os_info
         ping
         pong
         starter
