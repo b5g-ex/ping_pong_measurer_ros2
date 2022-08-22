@@ -54,10 +54,10 @@ private:
   std::mutex mutex_;
 
   void ping(std::string payload = "ping"s) {
-    auto message_pointer = std::make_unique<std_msgs::msg::String>();
-    message_pointer->data = payload;
+    auto message = std_msgs::msg::String();
+    message.data = payload;
 
-    publisher_->publish(*message_pointer);
+    publisher_->publish(message);
   }
 
   void ping_for_measurement(std::string payload = "ping"s) {
