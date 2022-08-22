@@ -19,6 +19,7 @@ public:
           std::cout << data << std::endl;
           if (data == "measurements completed"s) {
             stop_os_info_measurement();
+            exit(0);
           }
         });
   }
