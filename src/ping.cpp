@@ -123,12 +123,6 @@ private:
     starter_publisher_->publish(message);
   }
 
-  void reset_global_variables() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    is_measuring_g = false;
-    measurements_completed_node_counts_g = 0;
-    data_directory_path_g.clear();
-  }
 
   bool is_all_nodes_measurements_completed() {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -137,8 +131,13 @@ private:
   }
 
   void finish_measurements() {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     tell_measurements_completed_to_starter();
-    reset_global_variables();
+    // reset global variables
+    is_measuring_g = false;
+    data_directory_path_g.clear();
+    measurements_completed_node_counts_g = 0;
   }
 
 public:
