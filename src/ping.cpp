@@ -74,7 +74,7 @@ private:
   }
 
   std::filesystem::path csv_file_path(std::filesystem::path data_directory_path) {
-    // zero padding, csv_file_name is like 0100.csv
+    // zero padding, csv_file_name is like 0099.csv
     const auto id_string = std::to_string(id_);
     const uint padding_digits = 4;
     const auto csv_file_name =
