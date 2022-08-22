@@ -73,7 +73,7 @@ private:
     measurements_.back().recv_time() = std::chrono::system_clock::now();
   }
 
-  std::filesystem::path csv_file_path(std::filesystem::path data_directory_path) {
+  std::filesystem::path csv_file_path(const std::filesystem::path &data_directory_path) {
     // zero padding, csv_file_name is like 0099.csv
     const auto id_string = std::to_string(id_);
     const uint padding_digits = 4;
