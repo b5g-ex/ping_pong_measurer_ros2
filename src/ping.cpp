@@ -11,16 +11,19 @@ using namespace std::literals;
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-static ppm_options options_g;
+//// GLOBALS VARIABLES ON THREADS ->
+// lock_guard targets
 static std::filesystem::path data_directory_path_g;
 static bool is_measuring_g = false;
 static uint measurements_completed_node_counts_g = 0;
 
-// COMMON MESUREMENT SETTINGS, RHS IS DEFAULT VALUE
+// common mesurement settings, rhs is default value,  set once on start up
+static ppm_options options_g;
 static uint node_counts_g = 100;
 static uint measurement_times_g = 100;
 static uint ping_times_g = 100;
 static uint payload_bytes_g = 10;
+//// <- GLOBALS VARIABLES ON THREADS
 
 class Ping : public rclcpp::Node {
 
@@ -48,12 +51,13 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement> measurements_;
   uint ping_counts_ = 0;
+  std::mutex mutex_;
 
   void ping(std::string payload = "ping"s) {
-    auto message_pointer = std::make_unique<std_msgs::msg::String>();
-    message_pointer->data = payload;
+    auto message = std_msgs::msg::String();
+    message.data = payload;
 
-    publisher_->publish(*message_pointer);
+    publisher_->publish(message);
   }
 
   void ping_for_measurement(std::string payload = "ping"s) {
@@ -69,8 +73,8 @@ private:
     measurements_.back().recv_time() = std::chrono::system_clock::now();
   }
 
-  std::filesystem::path csv_file_path(std::filesystem::path data_directory_path) {
-    // zero padding, csv_file_name is like 0100.csv
+  std::filesystem::path csv_file_path(const std::filesystem::path &data_directory_path) {
+    // zero padding, csv_file_name is like 0099.csv
     const auto id_string = std::to_string(id_);
     const uint padding_digits = 4;
     const auto csv_file_name =
@@ -104,21 +108,36 @@ private:
     measurements_.clear();
   }
 
+  void ready_measurements() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (is_measuring_g)
+      return;
+
+    data_directory_path_g = create_data_directory(options_g);
+    is_measuring_g = true;
+  }
+
   void tell_measurements_completed_to_starter() {
     auto message = std_msgs::msg::String();
     message.data = "measurements completed"s;
     starter_publisher_->publish(message);
   }
 
-  void reset_global_variables() {
-    is_measuring_g = false;
-    measurements_completed_node_counts_g = 0;
-    data_directory_path_g.clear();
+
+  bool is_all_nodes_measurements_completed() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    ++measurements_completed_node_counts_g;
+    return measurements_completed_node_counts_g == node_counts_g;
   }
 
   void finish_measurements() {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     tell_measurements_completed_to_starter();
-    reset_global_variables();
+    // reset global variables
+    is_measuring_g = false;
+    data_directory_path_g.clear();
+    measurements_completed_node_counts_g = 0;
   }
 
 public:
@@ -146,7 +165,7 @@ public:
 
             dump_measurements_to_csv(csv_file_path(data_directory_path_g));
 
-            if (++measurements_completed_node_counts_g != get_node_counts(options_g))
+            if (!is_all_nodes_measurements_completed())
               return;
 
             finish_measurements();
@@ -155,17 +174,14 @@ public:
         });
 
     starter_publisher_ = this->create_publisher<std_msgs::msg::String>(
-        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)));
+        "from_ping_to_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)));
 
     starter_subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)),
+        "from_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
-            if (!is_measuring_g) {
-              data_directory_path_g = create_data_directory(options_g);
-              is_measuring_g = true;
-            }
+            ready_measurements();
             start_repeat_measurement();
             ping_for_measurement(std::string(payload_bytes_g, 'a'));
           }

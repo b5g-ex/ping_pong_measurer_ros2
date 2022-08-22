@@ -54,7 +54,7 @@ inline auto time_since_epoch_milliseconds(const std::chrono::system_clock::time_
   return std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count();
 }
 
-inline std::string create_data_directory_name(ppm_options options) {
+inline std::string create_data_directory_name(const ppm_options &options) {
   const auto [node_counts, payload_bytes, measurement_times] = options;
   const auto nc = std::to_string(node_counts);
   const auto pb = std::to_string(payload_bytes);
@@ -63,14 +63,14 @@ inline std::string create_data_directory_name(ppm_options options) {
   return get_datetime_utc_now_string() + "_"s + "nc"s + nc + "_"s + "pb"s + pb + "_"s + "mt"s + mt;
 }
 
-inline std::filesystem::path create_data_directory(std::string directory_name) {
+inline std::filesystem::path create_data_directory(const std::string &directory_name) {
   const auto data_directory_path = std::filesystem::current_path() / "data"s / directory_name;
 
   std::filesystem::create_directories(data_directory_path);
   return data_directory_path;
 }
 
-inline std::filesystem::path create_data_directory(ppm_options options) {
+inline std::filesystem::path create_data_directory(const ppm_options &options) {
   const auto data_directory_name = create_data_directory_name(options);
   return create_data_directory(data_directory_name);
 }
