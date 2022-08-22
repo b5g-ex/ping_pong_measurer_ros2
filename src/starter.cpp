@@ -10,11 +10,10 @@ private:
 
 public:
   Starter(std::string node_name) : Node(node_name) {
-    const auto topic_name = "command"s;
-    publisher_ = this->create_publisher<std_msgs::msg::String>(topic_name,
+    publisher_ = this->create_publisher<std_msgs::msg::String>("from_starter"s,
                                                                rclcpp::QoS(rclcpp::KeepLast(10)));
     subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        topic_name, rclcpp::QoS(rclcpp::KeepLast(10)),
+        "from_ping_to_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto data = message_pointer->data;
           std::cout << data << std::endl;

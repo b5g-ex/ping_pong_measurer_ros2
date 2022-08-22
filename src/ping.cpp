@@ -155,10 +155,10 @@ public:
         });
 
     starter_publisher_ = this->create_publisher<std_msgs::msg::String>(
-        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)));
+        "from_ping_to_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)));
 
     starter_subscriber_ = this->create_subscription<std_msgs::msg::String>(
-        "command"s, rclcpp::QoS(rclcpp::KeepLast(10)),
+        "from_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
