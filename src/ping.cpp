@@ -12,10 +12,11 @@ using namespace std::literals;
 #include "std_msgs/msg/string.hpp"
 
 //// GLOBALS VARIABLES ON THREADS ->
-// lock_guard targets
+// lock_guard targets and mutex
 static std::filesystem::path data_directory_path_g;
 static bool is_measuring_g = false;
 static uint measurements_completed_node_counts_g = 0;
+static std::mutex mutex_g;
 
 // common mesurement settings, rhs is default value,  set once on start up
 static ppm_options options_g;
@@ -51,7 +52,6 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement> measurements_;
   uint ping_counts_ = 0;
-  std::mutex mutex_;
 
   void ping(std::string payload = "ping"s) {
     auto message = std_msgs::msg::String();
@@ -109,7 +109,8 @@ private:
   }
 
   void ready_measurements() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_g);
+
     if (is_measuring_g)
       return;
 
@@ -123,15 +124,15 @@ private:
     starter_publisher_->publish(message);
   }
 
-
   bool is_all_nodes_measurements_completed() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_g);
+
     ++measurements_completed_node_counts_g;
     return measurements_completed_node_counts_g == node_counts_g;
   }
 
   void finish_measurements() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_g);
 
     tell_measurements_completed_to_starter();
     // reset global variables
