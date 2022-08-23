@@ -53,14 +53,14 @@ private:
   std::vector<measurement> measurements_;
   uint ping_counts_ = 0;
 
-  void ping(std::string payload = "ping"s) {
+  void ping(const std::string payload) {
     auto message = std_msgs::msg::String();
     message.data = payload;
 
     publisher_->publish(message);
   }
 
-  void ping_for_measurement(std::string payload = "ping"s) {
+  void ping_for_measurement(const std::string payload) {
     ping(payload);
     ++ping_counts_;
   }
