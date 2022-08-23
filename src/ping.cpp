@@ -118,9 +118,9 @@ private:
     is_measuring_g = true;
   }
 
-  void tell_measurements_completed_to_starter() {
+  void publish_to_starter(const std::string payload) {
     auto message = std_msgs::msg::String();
-    message.data = "measurements completed"s;
+    message.data = payload;
     starter_publisher_->publish(message);
   }
 
@@ -134,7 +134,7 @@ private:
   void finish_measurements() {
     std::lock_guard<std::mutex> lock(mutex_g);
 
-    tell_measurements_completed_to_starter();
+    publish_to_starter("measurements completed"s);
     // reset global variables
     is_measuring_g = false;
     data_directory_path_g.clear();
