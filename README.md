@@ -1,14 +1,5 @@
 # ping_pong_measurer_ros2
 
-## TODO
-
-- [x] ペイロードサイズ可変
-- [x] 並列実行
-- [x] 計測データファイル保存
-- [x] 計測データ日時追加（秒以下を含む）
-- [x] CPU、メモリ使用率計測ノード
-- [x] 使用方法のアップデート
-
 ## Prerequisites
 
 install followings,
