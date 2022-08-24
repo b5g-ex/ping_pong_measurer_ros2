@@ -131,14 +131,21 @@ private:
     return measurements_completed_node_counts_g == node_counts_g;
   }
 
+  void finish_a_measurement() {
+    std::lock_guard<std::mutex> lock(mutex_g);
+
+    publish_to_starter("a measurement completed"s);
+    measurements_completed_node_counts_g = 0;
+  }
+
   void finish_measurements() {
     std::lock_guard<std::mutex> lock(mutex_g);
 
     publish_to_starter("measurements completed"s);
     // reset global variables
+    measurements_completed_node_counts_g = 0;
     is_measuring_g = false;
     data_directory_path_g.clear();
-    measurements_completed_node_counts_g = 0;
   }
 
 public:
@@ -159,13 +166,16 @@ public:
           reset_ping_counts();
 
           if (measurements_.size() < measurement_times_g) {
-            start_repeat_measurement();
-            ping_for_measurement(message_pointer->data);
+            // 全ノードで 一点計測が終わったら、その旨を最後のノードが starter に伝える
+            if (!is_all_nodes_measurements_completed())
+              return;
+
+            finish_a_measurement();
           } else {
             assert(measurements_.size() == measurement_times_g);
-
             dump_measurements_to_csv(csv_file_path(data_directory_path_g));
 
+            // 全ノードで 全点計測が終わったら、その旨を最後のノードが starter に伝える
             if (!is_all_nodes_measurements_completed())
               return;
 

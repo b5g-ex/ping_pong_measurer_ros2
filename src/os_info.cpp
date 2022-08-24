@@ -164,11 +164,11 @@ public:
         "from_starter"s, rclcpp::QoS(rclcpp::KeepLast(10)),
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
-          std::cout << command << " received"s << std::endl;
           if (command == "start os info measurement"s) {
             start_measurement();
           } else if (command == "stop os info measurement"s) {
             stop_measurement();
+            RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
           }
         });
   }
