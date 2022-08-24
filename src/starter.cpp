@@ -9,6 +9,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
   bool is_measuring_ = false;
+  uint measurement_counts_ = 0;
 
 public:
   Starter(std::string node_name) : Node(node_name) {
@@ -21,9 +22,13 @@ public:
           const auto data = message_pointer->data;
 
           if (data == "a measurement completed"s) {
+            RCLCPP_INFO(this->get_logger(),
+                        "%s received, measure next, current measurement counts is %d.",
+                        data.c_str(), ++measurement_counts_);
             start_measurement();
           } else if (data == "measurements completed"s) {
-            RCLCPP_INFO(this->get_logger(), "%s received.", data.c_str());
+            RCLCPP_INFO(this->get_logger(), "%s received, current measurement counts is %d.",
+                        data.c_str(), ++measurement_counts_);
             stop_os_info_measurement();
 
             RCLCPP_INFO(this->get_logger(), "now exit.");
