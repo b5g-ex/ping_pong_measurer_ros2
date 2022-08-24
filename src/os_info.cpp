@@ -167,8 +167,10 @@ public:
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start os info measurement"s) {
+            RCLCPP_INFO(this->get_logger(), "%s received.", command.c_str());
             start_measurement();
           } else if (command == "stop os info measurement"s) {
+            RCLCPP_INFO(this->get_logger(), "%s received.", command.c_str());
             stop_measurement();
             RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
           }

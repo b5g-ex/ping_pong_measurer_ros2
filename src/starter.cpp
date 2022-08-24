@@ -23,7 +23,10 @@ public:
           if (data == "a measurement completed"s) {
             start_measurement();
           } else if (data == "measurements completed"s) {
+            RCLCPP_INFO(this->get_logger(), "%s received.", data.c_str());
             stop_os_info_measurement();
+
+            RCLCPP_INFO(this->get_logger(), "now exit.");
             exit(0);
           }
         });
