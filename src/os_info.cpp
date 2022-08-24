@@ -154,7 +154,7 @@ private:
 
 public:
   OsInfo() : Node("os_info") {
-    timer_ = this->create_wall_timer(10ms, [this]() {
+    timer_ = this->create_wall_timer(100ms, [this]() {
       if (!is_measuring_)
         return;
 
