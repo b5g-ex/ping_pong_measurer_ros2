@@ -170,6 +170,7 @@ public:
             ping_for_measurement(message_pointer->data);
             return;
           }
+          assert(ping_counts_ == ping_times_g);
 
           stop_repeat_measurement();
           report_progress();
