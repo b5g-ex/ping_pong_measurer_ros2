@@ -57,6 +57,7 @@ class OsInfo : public rclcpp::Node {
         csv_file_stream << std::to_string(measurement_time) << ","s << cpu_info.data() << "\n"s;
       }
 
+      csv_file_stream.flush();
       cpu_infos.clear();
     }
   };
@@ -112,6 +113,7 @@ class OsInfo : public rclcpp::Node {
                         << "\n"s;
       }
 
+      csv_file_stream.flush();
       memory_infos.clear();
     }
   };

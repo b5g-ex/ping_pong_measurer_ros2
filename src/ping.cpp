@@ -106,6 +106,7 @@ private:
                       << "\n"s;
     }
 
+    csv_file_stream.flush();
     measurements_.clear();
   }
 
