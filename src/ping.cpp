@@ -39,8 +39,9 @@ class Ping : public rclcpp::Node {
     std::chrono::system_clock::time_point &send_time() { return send_time_; }
     std::chrono::system_clock::time_point &recv_time() { return recv_time_; }
 
-    int took_time() {
-      return std::chrono::duration_cast<std::chrono::microseconds>(recv_time_ - send_time_).count();
+    double took_time_milliseconds() {
+      using namespace std::chrono;
+      return duration_cast<microseconds>(recv_time_ - send_time_).count() / 1000.0;
     }
   };
 
@@ -101,7 +102,7 @@ private:
       const auto recv_time = time_since_epoch_milliseconds(measurement.recv_time());
 
       csv_file_stream << std::to_string(send_time) << ","s << std::to_string(recv_time) << ","s
-                      << std::to_string(measurement.took_time() / 1000.0) << ","s
+                      << std::to_string(measurement.took_time_milliseconds()) << ","s
                       << "\n"s;
     }
 
@@ -152,7 +153,7 @@ private:
     if (id_ != 0)
       return;
     RCLCPP_INFO(this->get_logger(), "progress: %d/%d, took time: %f", measurements_.size(),
-                measurement_times_g, measurements_.back().took_time() / 1000.0);
+                measurement_times_g, measurements_.back().took_time_milliseconds());
   }
 
 public:
