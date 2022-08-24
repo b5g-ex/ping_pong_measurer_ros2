@@ -110,7 +110,7 @@ private:
     measurements_.clear();
   }
 
-  void ready_measurements() {
+  void cut_measurements_start_line() {
     std::lock_guard<std::mutex> lock(mutex_g);
 
     if (is_measuring_g)
@@ -118,6 +118,7 @@ private:
 
     data_directory_path_g = create_data_directory(options_g);
     is_measuring_g = true;
+    RCLCPP_INFO(this->get_logger(), "measurements start line is cut!! GOGO!!!");
   }
 
   void publish_to_starter(const std::string payload) {
@@ -203,7 +204,7 @@ public:
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
-            ready_measurements();
+            cut_measurements_start_line();
             start_repeat_measurement();
             ping_for_measurement(std::string(payload_bytes_g, 'a'));
           }
