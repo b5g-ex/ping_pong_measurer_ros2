@@ -148,6 +148,13 @@ private:
     data_directory_path_g.clear();
   }
 
+  void report_progress() {
+    if (id_ != 0)
+      return;
+    RCLCPP_INFO(this->get_logger(), "progress: %d/%d, took time: %f", measurements_.size(),
+                measurement_times_g, measurements_.back().took_time() / 1000.0);
+  }
+
 public:
   Ping(const uint id) : Node(ping_node_name(id)), id_(id) {
 
@@ -163,6 +170,7 @@ public:
           }
 
           stop_repeat_measurement();
+          report_progress();
           reset_ping_counts();
 
           if (measurements_.size() < measurement_times_g) {
