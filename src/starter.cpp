@@ -31,8 +31,7 @@ public:
                         data.c_str(), ++measurement_counts_);
             stop_os_info_measurement();
 
-            RCLCPP_INFO(this->get_logger(), "now exit.");
-            exit(0);
+            RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
           }
         });
 
