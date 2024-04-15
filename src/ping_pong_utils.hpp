@@ -9,7 +9,7 @@
 #include <string>
 using namespace std::literals;
 
-using ppm_options = std::tuple<uint, uint, uint>;
+using ppm_options = std::tuple<uint, uint, uint, std::string, std::string>;
 
 inline std::string ping_node_name(uint id) { return "ping_node"s + std::to_string(id); }
 inline std::string pong_node_name(uint id) { return "pong_node"s + std::to_string(id); }
@@ -21,6 +21,8 @@ inline ppm_options get_options(int argc, char *argv[]) {
   uint node_counts = 1;
   uint payload_bytes = 10;
   uint measurement_times = 100;
+  std::string ping_pub_type = "single"s;
+  std::string ping_sub_type = "single"s;
 
   for (auto i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "--node-counts"s) {
@@ -29,15 +31,21 @@ inline ppm_options get_options(int argc, char *argv[]) {
       payload_bytes = std::stoi(argv[++i]);
     } else if (std::string(argv[i]) == "--measurement-times"s) {
       measurement_times = std::stoi(argv[++i]);
+    } else if (std::string(argv[i]) == "--pub"s) {
+      ping_pub_type = std::string(argv[++i]);
+    } else if (std::string(argv[i]) == "--sub"s) {
+      ping_sub_type = std::string(argv[++i]);
     }
   }
 
-  return {node_counts, payload_bytes, measurement_times};
+  return {node_counts, payload_bytes, measurement_times, ping_pub_type, ping_sub_type};
 }
 
 inline uint get_node_counts(ppm_options options) { return std::get<0>(options); }
 inline uint get_payload_bytes(ppm_options options) { return std::get<1>(options); }
 inline uint get_measurement_times(ppm_options options) { return std::get<2>(options); }
+inline std::string get_ping_pub_type(ppm_options options) { return std::get<3>(options); }
+inline std::string get_ping_sub_type(ppm_options options) { return std::get<4>(options); }
 
 inline std::string get_datetime_utc_now_string(
     std::chrono::system_clock::time_point time_point = std::chrono::system_clock::now()) {
@@ -55,10 +63,9 @@ inline auto time_since_epoch_milliseconds(const std::chrono::system_clock::time_
 }
 
 inline std::string create_data_directory_name(const ppm_options &options) {
-  const auto [node_counts, payload_bytes, measurement_times] = options;
-  const auto nc = std::to_string(node_counts);
-  const auto pb = std::to_string(payload_bytes);
-  const auto mt = std::to_string(measurement_times);
+  const auto nc = std::to_string(get_node_counts(options));
+  const auto pb = std::to_string(get_payload_bytes(options));
+  const auto mt = std::to_string(get_measurement_times(options));
 
   return get_datetime_utc_now_string() + "_"s + "nc"s + nc + "_"s + "pb"s + pb + "_"s + "mt"s + mt;
 }
