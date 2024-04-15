@@ -20,7 +20,7 @@ run_ping: build
 run_pong: build
 	source /opt/ros/foxy/setup.bash && \
 	source install/setup.bash && \
-	ros2 run ping_pong_measurer pong --node-counts 10
+	ros2 run ping_pong_measurer pong --node-counts 10 --pub single --sub single
 
 run_talker:
 	source /opt/ros/foxy/setup.bash && \
