@@ -7,7 +7,7 @@ os_info: build
 	source install/setup.bash && \
 	ros2 run ping_pong_measurer os_info
 
-starter: build
+run_starter: build
 	source /opt/ros/foxy/setup.bash && \
 	source install/setup.bash && \
 	ros2 run ping_pong_measurer starter
@@ -15,7 +15,7 @@ starter: build
 run_ping: build
 	source /opt/ros/foxy/setup.bash && \
 	source install/setup.bash && \
-	ros2 run ping_pong_measurer ping --node-counts 10 --payload-bytes 10 --measurement-times 100
+	ros2 run ping_pong_measurer ping --pong-node-count 10 --payload-bytes 10 --measurement-times 100 --pub single --sub single
 
 run_pong: build
 	source /opt/ros/foxy/setup.bash && \
