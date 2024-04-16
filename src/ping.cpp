@@ -85,6 +85,9 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement> measurements_;
   uint ping_counts_ = 0;
+  std::mutex pong_count_mutex_;
+  uint pong_count_ = 0;
+  uint measurement_count_ = 0;
   std::string pub_type_ = "single"s;
   std::string sub_type_ = "single"s;
 
@@ -227,7 +230,16 @@ public:
     }
 
     auto callback = [this](const std_msgs::msg::String::SharedPtr message_pointer) {
-      RCLCPP_INFO(this->get_logger(), message_pointer->data);
+      std::lock_guard<std::mutex> lock(pong_count_mutex_);
+      if (++pong_count_ == pong_node_count_g) {
+        if (++measurement_count_ < measurement_times_g) {
+          RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_g);
+          publish_to_starter("a measurement completed"s);
+        } else {
+          RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_g);
+        }
+        pong_count_ = 0;
+      }
     };
 
     rclcpp::SubscriptionOptions subscription_options;
