@@ -203,6 +203,8 @@ public:
       } else {
         RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
         dump_measurements_to_csv("data/test.csv");
+        publish_to_starter("measurements completed"s);
+        RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
       }
       pong_count_ = 0;
     };
