@@ -13,16 +13,6 @@ using namespace std::literals;
 
 using options = std::tuple<uint, uint, uint, std::string, std::string>;
 
-//// GLOBALS VARIABLES ON THREADS ->
-// lock_guard targets and mutex
-static std::filesystem::path data_directory_path_g;
-static std::mutex mutex_g;
-
-// common mesurement settings, rhs is default value,  set once on start up
-static uint measurement_times_g = 100;
-static uint payload_bytes_g = 10;
-//// <- GLOBALS VARIABLES ON THREADS
-
 inline options get_options(int argc, char *argv[]) {
   uint pong_node_count = 1;
   uint payload_bytes = 10;
@@ -83,7 +73,9 @@ private:
   uint ping_counts_ = 0;
   std::mutex pong_count_mutex_;
   uint pong_count_ = 0;
+  uint measurement_times_ = 100;
   uint measurement_count_ = 0;
+  uint payload_bytes_ = 10;
   uint pong_node_count_ = 0;
   std::string pub_type_ = "single"s;
   std::string sub_type_ = "single"s;
@@ -177,9 +169,10 @@ private:
   }
 
 public:
-  Ping(const uint pong_node_count, std::string pub_type, std::string sub_type)
+  Ping(const uint pong_node_count, std::string pub_type, std::string sub_type,
+       const uint measurement_times, const uint payload_bytes)
       : Node(ping_node_name_()), pong_node_count_(pong_node_count), pub_type_(pub_type),
-        sub_type_(sub_type) {
+        sub_type_(sub_type), measurement_times_(measurement_times), payload_bytes_(payload_bytes) {
 
     if (pub_type == "single"s) {
       publishers_.push_back(this->create_publisher<std_msgs::msg::String>(
@@ -201,11 +194,11 @@ public:
       std::lock_guard<std::mutex> lock(pong_count_mutex_);
       if (++pong_count_ == pong_node_count_) {
         measurements_.push_back(current_measurement_);
-        if (++measurement_count_ < measurement_times_g) {
-          RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_g);
+        if (++measurement_count_ < measurement_times_) {
+          RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_);
           publish_to_starter("a measurement completed"s);
         } else {
-          RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_g);
+          RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
           dump_measurements_to_csv("data/test.csv");
         }
         pong_count_ = 0;
@@ -238,7 +231,7 @@ public:
           const auto command = message_pointer->data;
           if (command == "start"s) {
             current_measurement_ = new measurement(pong_node_count_, pub_type_);
-            ping(std::string(payload_bytes_g, '0'));
+            ping(std::string(payload_bytes_, '0'));
           }
         });
   }
@@ -249,12 +242,13 @@ int main(int argc, char *argv[]) {
 
   const auto options = get_options(argc, argv);
   const auto pong_node_count = get_pong_node_count(options);
-  measurement_times_g = get_measurement_times(options);
-  payload_bytes_g = get_payload_bytes(options);
+  const auto measurement_times = get_measurement_times(options);
+  const auto payload_bytes = get_payload_bytes(options);
   const auto pub_type = get_pub_type(options);
   const auto sub_type = get_sub_type(options);
 
-  auto node = std::make_shared<Ping>(pong_node_count, pub_type, sub_type);
+  auto node =
+      std::make_shared<Ping>(pong_node_count, pub_type, sub_type, measurement_times, payload_bytes);
 
   // TODO: executor のスレッド数はいくつにするべきか要検討
   rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), pong_node_count);
