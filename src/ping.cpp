@@ -61,20 +61,20 @@ inline std::string get_sub_type(options options) { return std::get<4>(options); 
 class Ping : public rclcpp::Node {
 
   class measurement {
-
-  private:
-    std::chrono::system_clock::time_point send_time_, recv_time_;
-
   public:
-    measurement(std::chrono::system_clock::time_point now) : send_time_(now) {}
-
-    std::chrono::system_clock::time_point &send_time() { return send_time_; }
-    std::chrono::system_clock::time_point &recv_time() { return recv_time_; }
-
-    double took_time_milliseconds() {
-      using namespace std::chrono;
-      return duration_cast<microseconds>(recv_time_ - send_time_).count() / 1000.0;
+    measurement(uint pong_node_count, std::string pub_type) {
+      if (pub_type == "single"s) {
+        send_times.resize(1);
+        recv_times.resize(pong_node_count);
+      } else if (pub_type == "multiple"s) {
+        send_times.resize(pong_node_count);
+        recv_times.resize(pong_node_count);
+      } else {
+        throw std::runtime_error("pub_type is invalid!!!");
+      }
     }
+    std::vector<std::chrono::system_clock::time_point> send_times;
+    std::vector<std::chrono::system_clock::time_point> recv_times;
   };
 
 private:
@@ -83,11 +83,13 @@ private:
   std::vector<rclcpp::Subscription<std_msgs::msg::String>::SharedPtr> subscribers_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr starter_publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
-  std::vector<measurement> measurements_;
+  std::vector<measurement *> measurements_;
+  measurement *current_measurement_ = nullptr;
   uint ping_counts_ = 0;
   std::mutex pong_count_mutex_;
   uint pong_count_ = 0;
   uint measurement_count_ = 0;
+  uint pong_node_count_ = 0;
   std::string pub_type_ = "single"s;
   std::string sub_type_ = "single"s;
 
@@ -95,8 +97,12 @@ private:
     auto message = std_msgs::msg::String();
     message.data = payload;
 
+    // TODO: publisher の並びで send_times をママつめてよいかは要確認し、修正すること
+    uint i = 0;
     for (const auto publisher : publishers_) {
+      current_measurement_->send_times.at(i) = std::chrono::system_clock::now();
       publisher->publish(message);
+      ++i;
     }
   }
 
@@ -106,12 +112,6 @@ private:
   }
 
   void reset_ping_counts() { ping_counts_ = 0; }
-
-  void start_repeat_measurement() { measurements_.emplace_back(std::chrono::system_clock::now()); }
-
-  void stop_repeat_measurement() {
-    measurements_.back().recv_time() = std::chrono::system_clock::now();
-  }
 
   std::filesystem::path csv_file_path(const std::filesystem::path &data_directory_path) {
     // zero padding, csv_file_name is like 0099.csv
@@ -126,6 +126,7 @@ private:
     std::ofstream csv_file_stream(csv_file_path.string());
 
     // header
+    /*
     csv_file_stream << "send_time[ms]"s
                     << ","s
                     << "recv_time[ms]"s
@@ -133,21 +134,47 @@ private:
                     << "took_time[ms]"s
                     << ","s
                     << "\n"s;
+    */
 
     // body
-    /*
-        for (auto measurement : measurements_) {
-
-          const auto send_time = time_since_epoch_milliseconds(measurement.send_time());
-          const auto recv_time = time_since_epoch_milliseconds(measurement.recv_time());
-
-          csv_file_stream << std::to_string(send_time) << ","s << std::to_string(recv_time) << ","s
-                          << std::to_string(measurement.took_time_milliseconds()) << ","s
-                          << "\n"s;
+    for (auto measurement : measurements_) {
+      for (auto send_time : measurement->send_times) {
+        auto count =
+            std::chrono::duration_cast<std::chrono::microseconds>(send_time.time_since_epoch())
+                .count();
+        csv_file_stream << std::to_string(count) << ","s;
+      }
+      for (auto recv_time : measurement->recv_times) {
+        auto count =
+            std::chrono::duration_cast<std::chrono::microseconds>(recv_time.time_since_epoch())
+                .count();
+        csv_file_stream << std::to_string(count) << ","s;
+      }
+      for (auto i = 0lu; i < measurement->recv_times.size(); ++i) {
+        std::chrono::system_clock::time_point recv_time = measurement->recv_times.at(i);
+        std::chrono::system_clock::time_point send_time;
+        if (measurement->send_times.size() == 1) {
+          send_time = measurement->send_times.at(0);
+        } else {
+          send_time = measurement->send_times.at(i);
         }
-    */
+
+        auto rc =
+            std::chrono::duration_cast<std::chrono::microseconds>(recv_time.time_since_epoch())
+                .count();
+        auto sc =
+            std::chrono::duration_cast<std::chrono::microseconds>(send_time.time_since_epoch())
+                .count();
+
+        csv_file_stream << std::to_string(rc - sc) << ","s;
+      }
+      csv_file_stream << "\n"s;
+    }
+
     csv_file_stream.flush();
-    measurements_.clear();
+    for (auto measurement : measurements_) {
+      delete measurement;
+    }
   }
 
   /*
@@ -192,13 +219,6 @@ private:
     data_directory_path_g.clear();
   }
 
-  void report_progress() {
-    if (id_ != 0)
-      return;
-    RCLCPP_INFO(this->get_logger(), "progress: %d/%d, took time: %f", measurements_.size(),
-                measurement_times_g, measurements_.back().took_time_milliseconds());
-  }
-
   static std::string ping_node_name_() { return "ping"s; }
 
   static std::string ping_topic_name_(uint i) {
@@ -215,7 +235,8 @@ private:
 
 public:
   Ping(const uint pong_node_count, std::string pub_type, std::string sub_type)
-      : Node(ping_node_name_()), pub_type_(pub_type), sub_type_(sub_type) {
+      : Node(ping_node_name_()), pong_node_count_(pong_node_count), pub_type_(pub_type),
+        sub_type_(sub_type) {
 
     if (pub_type == "single"s) {
       publishers_.push_back(this->create_publisher<std_msgs::msg::String>(
@@ -230,13 +251,19 @@ public:
     }
 
     auto callback = [this](const std_msgs::msg::String::SharedPtr message_pointer) {
+      // ここで計測する
+      auto i = std::stoi(message_pointer->data.substr(0, 3));
+      current_measurement_->recv_times.at(i) = std::chrono::system_clock::now();
+
       std::lock_guard<std::mutex> lock(pong_count_mutex_);
       if (++pong_count_ == pong_node_count_g) {
+        measurements_.push_back(current_measurement_);
         if (++measurement_count_ < measurement_times_g) {
           RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_g);
           publish_to_starter("a measurement completed"s);
         } else {
           RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_g);
+          dump_measurements_to_csv("data/test.csv");
         }
         pong_count_ = 0;
       }
@@ -267,6 +294,7 @@ public:
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
+            current_measurement_ = new measurement(pong_node_count_, pub_type_);
             ping(std::string(payload_bytes_g, '0'));
           }
         });
