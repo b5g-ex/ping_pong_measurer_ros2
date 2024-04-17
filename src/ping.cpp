@@ -106,22 +106,6 @@ private:
     }
   }
 
-  void ping_for_measurement(const std::string payload) {
-    ping(payload);
-    ++ping_counts_;
-  }
-
-  void reset_ping_counts() { ping_counts_ = 0; }
-
-  std::filesystem::path csv_file_path(const std::filesystem::path &data_directory_path) {
-    // zero padding, csv_file_name is like 0099.csv
-    const auto id_string = std::to_string(id_);
-    const uint padding_digits = 4;
-    const auto csv_file_name =
-        std::string(padding_digits - id_string.length(), '0') + id_string + ".csv"s;
-    return data_directory_path / csv_file_name;
-  }
-
   void dump_measurements_to_csv(const std::filesystem::path &csv_file_path) {
     std::ofstream csv_file_stream(csv_file_path.string());
 
@@ -177,46 +161,10 @@ private:
     }
   }
 
-  /*
-    void cut_measurements_start_line() {
-      std::lock_guard<std::mutex> lock(mutex_g);
-
-      if (is_measuring_g)
-        return;
-
-      data_directory_path_g = create_data_directory(options_g);
-      is_measuring_g = true;
-      RCLCPP_INFO(this->get_logger(), "measurements start line is cut!! GOGO!!!");
-    }
-  */
   void publish_to_starter(const std::string payload) {
     auto message = std_msgs::msg::String();
     message.data = payload;
     starter_publisher_->publish(message);
-  }
-
-  bool is_all_nodes_measurements_completed() {
-    std::lock_guard<std::mutex> lock(mutex_g);
-
-    ++measurements_completed_node_counts_g;
-    return measurements_completed_node_counts_g == pong_node_count_g;
-  }
-
-  void finish_a_measurement() {
-    std::lock_guard<std::mutex> lock(mutex_g);
-
-    publish_to_starter("a measurement completed"s);
-    measurements_completed_node_counts_g = 0;
-  }
-
-  void finish_measurements() {
-    std::lock_guard<std::mutex> lock(mutex_g);
-
-    publish_to_starter("measurements completed"s);
-    // reset global variables
-    measurements_completed_node_counts_g = 0;
-    is_measuring_g = false;
-    data_directory_path_g.clear();
   }
 
   static std::string ping_node_name_() { return "ping"s; }
@@ -298,12 +246,6 @@ public:
             ping(std::string(payload_bytes_g, '0'));
           }
         });
-  }
-
-  ~Ping() {
-    if (is_measuring_g) {
-      dump_measurements_to_csv(csv_file_path(data_directory_path_g));
-    }
   }
 };
 
