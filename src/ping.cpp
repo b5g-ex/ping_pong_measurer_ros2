@@ -62,14 +62,12 @@ class Ping : public rclcpp::Node {
   };
 
 private:
-  uint id_;
   std::vector<rclcpp::Publisher<std_msgs::msg::String>::SharedPtr> publishers_;
   std::vector<rclcpp::Subscription<std_msgs::msg::String>::SharedPtr> subscribers_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr starter_publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   std::vector<measurement *> measurements_;
   measurement *current_measurement_ = nullptr;
-  uint ping_counts_ = 0;
   std::mutex pong_count_mutex_;
   uint pong_count_ = 0;
   uint measurement_times_ = 100;
@@ -173,6 +171,7 @@ public:
       : Node(ping_node_name_()), pong_node_count_(pong_node_count), pub_type_(pub_type),
         sub_type_(sub_type), measurement_times_(measurement_times), payload_bytes_(payload_bytes) {
 
+    // publisher を作成
     if (pub_type == "single"s) {
       publishers_.push_back(this->create_publisher<std_msgs::msg::String>(
           ping_topic_name_(0), rclcpp::QoS(rclcpp::KeepLast(10))));
@@ -185,29 +184,34 @@ public:
       throw std::runtime_error("pub_type is invalid!!!");
     }
 
+    // subscription の callback を定義
     auto callback = [this](const std_msgs::msg::String::SharedPtr message_pointer) {
-      // ここで計測する
+      // 計測
       auto i = std::stoi(message_pointer->data.substr(0, 3));
       current_measurement_->recv_times.at(i) = std::chrono::system_clock::now();
 
       std::lock_guard<std::mutex> lock(pong_count_mutex_);
-      if (++pong_count_ == pong_node_count_) {
-        measurements_.push_back(current_measurement_);
-        if (++measurement_count_ < measurement_times_) {
-          RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_);
-          publish_to_starter("a measurement completed"s);
-        } else {
-          RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
-          dump_measurements_to_csv("data/test.csv");
-        }
-        pong_count_ = 0;
+      if (++pong_count_ < pong_node_count_)
+        return;
+
+      // 全ての pong を受信したら、次回計測判定をする
+      assert(pong_count_ == pong_node_count_);
+      measurements_.push_back(current_measurement_);
+      if (++measurement_count_ < measurement_times_) {
+        RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_);
+        publish_to_starter("a measurement completed"s);
+      } else {
+        RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
+        dump_measurements_to_csv("data/test.csv");
       }
+      pong_count_ = 0;
     };
 
     rclcpp::SubscriptionOptions subscription_options;
     subscription_options.callback_group =
         create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
+    // subscription を作成
     if (sub_type == "single"s) {
       subscribers_.push_back(this->create_subscription<std_msgs::msg::String>(
           pong_topic_name_(0), rclcpp::QoS(rclcpp::KeepLast(10)), callback, subscription_options));
