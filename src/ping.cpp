@@ -92,7 +92,14 @@ private:
     }
   }
 
-  void dump_measurements_to_csv(const std::filesystem::path &csv_file_path) {
+  void dump_measurements_to_csv(const std::filesystem::path &data_directory_path,
+                                const std::string &file_name) {
+
+    if (!std::filesystem::exists(data_directory_path)) {
+      std::filesystem::create_directory(data_directory_path);
+    }
+
+    std::filesystem::path csv_file_path = data_directory_path / file_name;
     std::ofstream csv_file_stream(csv_file_path.string());
 
     // header
@@ -163,6 +170,12 @@ private:
     starter_publisher_->publish(message);
   }
 
+  std::string csv_file_name() {
+    std::ostringstream pong_node_count;
+    pong_node_count << std::setfill('0') << std::setw(3) << std::to_string(pong_node_count_);
+    return "rclcpp"s + "_" + pong_node_count.str() + "_"s + pub_type_ + "_"s + sub_type_ + ".csv"s;
+  }
+
   static std::string ping_node_name_() { return "ping"s; }
 
   static std::string ping_topic_name_(uint i) {
@@ -214,7 +227,7 @@ public:
         publish_to_starter("a measurement completed"s);
       } else {
         RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
-        dump_measurements_to_csv("data/test.csv");
+        dump_measurements_to_csv("data", csv_file_name());
         publish_to_starter("measurements completed"s);
         RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
       }
