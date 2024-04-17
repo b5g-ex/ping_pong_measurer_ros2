@@ -19,8 +19,6 @@ static std::filesystem::path data_directory_path_g;
 static std::mutex mutex_g;
 
 // common mesurement settings, rhs is default value,  set once on start up
-static options options_g;
-static uint pong_node_count_g = 100;
 static uint measurement_times_g = 100;
 static uint payload_bytes_g = 10;
 //// <- GLOBALS VARIABLES ON THREADS
@@ -201,7 +199,7 @@ public:
       current_measurement_->recv_times.at(i) = std::chrono::system_clock::now();
 
       std::lock_guard<std::mutex> lock(pong_count_mutex_);
-      if (++pong_count_ == pong_node_count_g) {
+      if (++pong_count_ == pong_node_count_) {
         measurements_.push_back(current_measurement_);
         if (++measurement_count_ < measurement_times_g) {
           RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_g);
@@ -249,17 +247,17 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  options_g = get_options(argc, argv);
-  pong_node_count_g = get_pong_node_count(options_g);
-  measurement_times_g = get_measurement_times(options_g);
-  payload_bytes_g = get_payload_bytes(options_g);
-  const auto pub_type = get_pub_type(options_g);
-  const auto sub_type = get_sub_type(options_g);
+  const auto options = get_options(argc, argv);
+  const auto pong_node_count = get_pong_node_count(options);
+  measurement_times_g = get_measurement_times(options);
+  payload_bytes_g = get_payload_bytes(options);
+  const auto pub_type = get_pub_type(options);
+  const auto sub_type = get_sub_type(options);
 
-  auto node = std::make_shared<Ping>(pong_node_count_g, pub_type, sub_type);
+  auto node = std::make_shared<Ping>(pong_node_count, pub_type, sub_type);
 
   // TODO: executor のスレッド数はいくつにするべきか要検討
-  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), pong_node_count_g);
+  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), pong_node_count);
   executor.add_node(node);
 
   executor.spin();
