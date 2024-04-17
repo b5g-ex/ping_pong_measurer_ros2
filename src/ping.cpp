@@ -16,15 +16,12 @@ using options = std::tuple<uint, uint, uint, std::string, std::string>;
 //// GLOBALS VARIABLES ON THREADS ->
 // lock_guard targets and mutex
 static std::filesystem::path data_directory_path_g;
-static bool is_measuring_g = false;
-static uint measurements_completed_node_counts_g = 0;
 static std::mutex mutex_g;
 
 // common mesurement settings, rhs is default value,  set once on start up
 static options options_g;
 static uint pong_node_count_g = 100;
 static uint measurement_times_g = 100;
-static uint ping_times_g = 100;
 static uint payload_bytes_g = 10;
 //// <- GLOBALS VARIABLES ON THREADS
 
