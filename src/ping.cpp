@@ -7,7 +7,6 @@
 #include <string>
 using namespace std::literals;
 
-// #include "ping_pong_utils.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
