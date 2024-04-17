@@ -96,15 +96,25 @@ private:
     std::ofstream csv_file_stream(csv_file_path.string());
 
     // header
-    /*
-    csv_file_stream << "send_time[ms]"s
-                    << ","s
-                    << "recv_time[ms]"s
-                    << ","s
-                    << "took_time[ms]"s
-                    << ","s
-                    << "\n"s;
-    */
+    {
+      const auto m = measurements_.at(0);
+      for (auto i = 0lu; i < m->send_times.size(); ++i) {
+        std::ostringstream index;
+        index << std::setfill('0') << std::setw(3) << std::to_string(i);
+        csv_file_stream << "st_"s << index.str() << "[us],"s;
+      }
+      for (auto i = 0lu; i < m->recv_times.size(); ++i) {
+        std::ostringstream index;
+        index << std::setfill('0') << std::setw(3) << std::to_string(i);
+        csv_file_stream << "rt_"s << index.str() << "[us],"s;
+      }
+      for (auto i = 0lu; i < m->recv_times.size(); ++i) {
+        std::ostringstream index;
+        index << std::setfill('0') << std::setw(3) << std::to_string(i);
+        csv_file_stream << "tt_"s << index.str() << "[us],"s;
+      }
+      csv_file_stream << "\n"s;
+    }
 
     // body
     for (auto measurement : measurements_) {
