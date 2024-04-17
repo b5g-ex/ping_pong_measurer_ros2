@@ -70,12 +70,14 @@ private:
   measurement *current_measurement_ = nullptr;
   std::mutex pong_count_mutex_;
   uint pong_count_ = 0;
-  uint measurement_times_ = 100;
   uint measurement_count_ = 0;
-  uint payload_bytes_ = 10;
-  uint pong_node_count_ = 0;
-  std::string pub_type_ = "single"s;
-  std::string sub_type_ = "single"s;
+
+  // initialized by constructor
+  uint pong_node_count_;
+  std::string pub_type_;
+  std::string sub_type_;
+  uint measurement_times_;
+  uint payload_bytes_;
 
   void ping(const std::string payload) {
     auto message = std_msgs::msg::String();
