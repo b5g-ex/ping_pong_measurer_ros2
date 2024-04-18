@@ -9,6 +9,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
   uint measurement_counts_ = 0;
+  FILE *os_info_measurer_ = nullptr;
 
 public:
   Starter(std::string node_name) : Node(node_name) {
@@ -51,8 +52,16 @@ public:
 
   void start_measurement() { publish_impl("start"s); }
   void stop_measurement() { publish_impl("stop"s); }
-  void start_os_info_measurement() { publish_impl("start os info measurement"s); }
-  void stop_os_info_measurement() { publish_impl("stop os info measurement"s); }
+  void start_os_info_measurement() {
+    std::system("pwd");
+    os_info_measurer_ = popen(
+        "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer -d data -f test_ -i 100",
+        "w");
+    std::string start = "start\n";
+    fwrite(start.c_str(), sizeof(char), start.size(), os_info_measurer_);
+    fflush(os_info_measurer_);
+  }
+  void stop_os_info_measurement() { pclose(os_info_measurer_); }
 };
 
 int main(int argc, char *argv[]) {
