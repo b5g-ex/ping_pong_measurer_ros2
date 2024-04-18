@@ -8,7 +8,6 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
-  bool is_measuring_ = false;
   uint measurement_counts_ = 0;
 
 public:
@@ -35,14 +34,12 @@ public:
           }
         });
 
+    // create one shot timer
     timer_ = this->create_wall_timer(3s, [this]() {
-      if (is_measuring_)
-        return;
-
       std::cout << "start measurement"s << std::endl;
       start_os_info_measurement();
       start_measurement();
-      is_measuring_ = true;
+      timer_->cancel();
     });
   }
 
