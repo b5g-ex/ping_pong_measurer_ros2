@@ -1,5 +1,6 @@
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -82,13 +83,31 @@ private:
   void ping(const std::string payload) {
     auto message = std_msgs::msg::String();
     message.data = payload;
+    std::vector<std::thread> threads;
+    std::condition_variable cv;
+    std::mutex mutex;
+    std::vector<bool> readies(publishers_.size(), false);
 
-    // TODO: publisher の並びで send_times をママつめてよいかは要確認し、修正すること
-    uint i = 0;
-    for (const auto publisher : publishers_) {
-      current_measurement_->send_times.at(i) = std::chrono::system_clock::now();
-      publisher->publish(message);
-      ++i;
+    for (const auto &publisher : publishers_) {
+      threads.emplace_back([&]() {
+        // ex. /ping010 -> 010 -> 10
+        std::string topic_name = publisher->get_topic_name();
+        uint i = std::stoi(topic_name.substr(5, 3));
+
+        std::unique_lock<std::mutex> lock(mutex);
+        readies.at(i) = true;
+        if (std::all_of(readies.begin(), readies.end(), [](bool b) { return b; })) {
+          cv.notify_all();
+        } else {
+          cv.wait(lock);
+        }
+        current_measurement_->send_times.at(i) = std::chrono::system_clock::now();
+        publisher->publish(message);
+      });
+    }
+
+    for (auto &thread : threads) {
+      thread.join();
     }
   }
 
