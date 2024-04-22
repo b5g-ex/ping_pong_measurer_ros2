@@ -299,8 +299,7 @@ int main(int argc, char *argv[]) {
   auto node =
       std::make_shared<Ping>(pong_node_count, pub_type, sub_type, measurement_times, payload_bytes);
 
-  // TODO: executor のスレッド数はいくつにするべきか要検討
-  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), pong_node_count);
+  rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
 
   executor.spin();
