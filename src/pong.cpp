@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
   const auto thread_counts = nodes.size();
   rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), thread_counts);
-  for (const auto node : nodes) {
+  for (const auto &node : nodes) {
     executor.add_node(node);
   }
 
