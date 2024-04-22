@@ -260,7 +260,7 @@ public:
     // subscription を作成
     if (sub_type == "single"s) {
       subscribers_.push_back(this->create_subscription<std_msgs::msg::String>(
-          pong_topic_name_(0), rclcpp::QoS(rclcpp::KeepLast(10)), callback, subscription_options));
+          pong_topic_name_(0), rclcpp::QoS(rclcpp::KeepLast(100)), callback, subscription_options));
     } else if (sub_type == "multiple"s) {
       for (auto i = 0u; i < pong_node_count; ++i) {
         subscribers_.push_back(this->create_subscription<std_msgs::msg::String>(
