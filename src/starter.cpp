@@ -55,7 +55,7 @@ public:
   void start_os_info_measurement() {
     std::system("pwd");
     os_info_measurer_ = popen(
-        "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer -d data -f test_ -i 100",
+        "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer -d data -f test_ -i 10",
         "w");
     std::string start = "start\n";
     fwrite(start.c_str(), sizeof(char), start.size(), os_info_measurer_);
