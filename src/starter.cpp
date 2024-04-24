@@ -9,7 +9,6 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
   uint measurement_counts_ = 0;
-  FILE *os_info_measurer_ = nullptr;
 
 public:
   Starter(std::string node_name) : Node(node_name) {
@@ -29,21 +28,12 @@ public:
           } else if (data == "measurements completed"s) {
             RCLCPP_INFO(this->get_logger(), "%s received, current measurement counts is %d.",
                         data.c_str(), ++measurement_counts_);
-
-            // OS 情報を 1s 余分に計測
-            std::this_thread::sleep_for(1s);
-            stop_os_info_measurement();
-
             RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
           }
         });
 
     // create one shot timer
     timer_ = this->create_wall_timer(0s, [this]() {
-      // OS 情報を 1s 余分に計測
-      start_os_info_measurement();
-      std::this_thread::sleep_for(1s);
-
       std::cout << "start measurement"s << std::endl;
       start_measurement();
       timer_->cancel();
@@ -58,16 +48,6 @@ public:
 
   void start_measurement() { publish_impl("start"s); }
   void stop_measurement() { publish_impl("stop"s); }
-  void start_os_info_measurement() {
-    std::system("pwd");
-    os_info_measurer_ = popen(
-        "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer -d data -f test_ -i 10",
-        "w");
-    std::string start = "start\n";
-    fwrite(start.c_str(), sizeof(char), start.size(), os_info_measurer_);
-    fflush(os_info_measurer_);
-  }
-  void stop_os_info_measurement() { pclose(os_info_measurer_); }
 };
 
 int main(int argc, char *argv[]) {

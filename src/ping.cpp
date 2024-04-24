@@ -72,6 +72,7 @@ private:
   std::mutex pong_count_mutex_;
   uint pong_count_ = 0;
   uint measurement_count_ = 0;
+  FILE *os_info_measurer_ = nullptr;
 
   // initialized by constructor
   uint pong_node_count_;
@@ -115,7 +116,7 @@ private:
                                 const std::string &file_name) {
 
     if (!std::filesystem::exists(data_directory_path)) {
-      std::filesystem::create_directory(data_directory_path);
+      std::filesystem::create_directories(data_directory_path);
     }
 
     std::filesystem::path csv_file_path = data_directory_path / file_name;
@@ -189,11 +190,18 @@ private:
     starter_publisher_->publish(message);
   }
 
-  std::string csv_file_name() {
+  std::string measurement_id() {
     std::ostringstream pong_node_count;
     pong_node_count << std::setfill('0') << std::setw(3) << std::to_string(pong_node_count_);
-    return "rclcpp"s + "_" + pong_node_count.str() + "_"s + pub_type_ + "_"s + sub_type_ + ".csv"s;
+    return "rclcpp"s + "_" + pong_node_count.str() + "_"s + pub_type_ + "_"s + sub_type_;
   }
+
+  std::filesystem::path data_directory_path() {
+    std::filesystem::path data_directory_path = "data";
+    return data_directory_path / measurement_id();
+  }
+
+  std::string csv_file_name() { return measurement_id() + ".csv"s; }
 
   static std::string ping_node_name_() { return "ping"s; }
 
@@ -208,6 +216,24 @@ private:
     index << std::setfill('0') << std::setw(3) << std::to_string(i);
     return "/pong"s + index.str();
   }
+
+  void start_os_info_measurement() {
+    std::system("pwd");
+
+    std::string bin_path = "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer";
+    std::string directory_path = data_directory_path();
+    std::string file_name_prefix = measurement_id() + "_";
+    std::string intervals_ms = "10";
+
+    std::string command =
+        bin_path + " -d " + directory_path + " -f " + file_name_prefix + " -i " + intervals_ms;
+
+    os_info_measurer_ = popen(command.c_str(), "w");
+    std::string start = "start\n";
+    fwrite(start.c_str(), sizeof(char), start.size(), os_info_measurer_);
+    fflush(os_info_measurer_);
+  }
+  void stop_os_info_measurement() { pclose(os_info_measurer_); }
 
 public:
   Ping(const uint pong_node_count, std::string pub_type, std::string sub_type,
@@ -246,7 +272,13 @@ public:
         publish_to_starter("a measurement completed"s);
       } else {
         RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
-        dump_measurements_to_csv("data", csv_file_name());
+
+        // OS 情報を 1s 余分に計測
+        std::this_thread::sleep_for(1s);
+        stop_os_info_measurement();
+
+        dump_measurements_to_csv(data_directory_path(), csv_file_name());
+
         publish_to_starter("measurements completed"s);
         RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
       }
@@ -279,6 +311,12 @@ public:
         [this](const std_msgs::msg::String::SharedPtr message_pointer) {
           const auto command = message_pointer->data;
           if (command == "start"s) {
+            if (current_measurement_ == nullptr) { // 初回のみ実行
+              // OS 情報を 1s 余分に計測
+              start_os_info_measurement();
+              std::this_thread::sleep_for(1s);
+            }
+
             current_measurement_ = new measurement(pong_node_count_, pub_type_);
             ping(std::string(payload_bytes_, '0'));
           }
