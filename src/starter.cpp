@@ -29,6 +29,9 @@ public:
           } else if (data == "measurements completed"s) {
             RCLCPP_INFO(this->get_logger(), "%s received, current measurement counts is %d.",
                         data.c_str(), ++measurement_counts_);
+
+            // OS 情報を 1s 余分に計測
+            std::this_thread::sleep_for(1s);
             stop_os_info_measurement();
 
             RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
@@ -36,9 +39,12 @@ public:
         });
 
     // create one shot timer
-    timer_ = this->create_wall_timer(3s, [this]() {
-      std::cout << "start measurement"s << std::endl;
+    timer_ = this->create_wall_timer(0s, [this]() {
+      // OS 情報を 1s 余分に計測
       start_os_info_measurement();
+      std::this_thread::sleep_for(1s);
+
+      std::cout << "start measurement"s << std::endl;
       start_measurement();
       timer_->cancel();
     });
