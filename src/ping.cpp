@@ -11,37 +11,41 @@ using namespace std::literals;
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-using options = std::tuple<uint, uint, uint, std::string, std::string>;
+class Options {
+private:
+  uint pong_node_count_ = 1;
+  uint payload_bytes_ = 10;
+  uint measurement_times_ = 100;
+  std::string ping_pub_type_ = "single"s;
+  std::string ping_sub_type_ = "single"s;
+  bool enable_os_info_measuring_ = false;
 
-inline options get_options(int argc, char *argv[]) {
-  uint pong_node_count = 1;
-  uint payload_bytes = 10;
-  uint measurement_times = 100;
-  std::string ping_pub_type = "single"s;
-  std::string ping_sub_type = "single"s;
-
-  for (auto i = 1; i < argc; ++i) {
-    if (std::string(argv[i]) == "--pong-node-count"s) {
-      pong_node_count = std::stoi(argv[++i]);
-    } else if (std::string(argv[i]) == "--payload-bytes"s) {
-      payload_bytes = std::stoi(argv[++i]);
-    } else if (std::string(argv[i]) == "--measurement-times"s) {
-      measurement_times = std::stoi(argv[++i]);
-    } else if (std::string(argv[i]) == "--pub"s) {
-      ping_pub_type = std::string(argv[++i]);
-    } else if (std::string(argv[i]) == "--sub"s) {
-      ping_sub_type = std::string(argv[++i]);
+public:
+  Options(int argc, char *argv[]) {
+    for (auto i = 1; i < argc; ++i) {
+      if (std::string(argv[i]) == "--pong-node-count"s) {
+        pong_node_count_ = std::stoi(argv[++i]);
+      } else if (std::string(argv[i]) == "--payload-bytes"s) {
+        payload_bytes_ = std::stoi(argv[++i]);
+      } else if (std::string(argv[i]) == "--measurement-times"s) {
+        measurement_times_ = std::stoi(argv[++i]);
+      } else if (std::string(argv[i]) == "--pub"s) {
+        ping_pub_type_ = std::string(argv[++i]);
+      } else if (std::string(argv[i]) == "--sub"s) {
+        ping_sub_type_ = std::string(argv[++i]);
+      } else if (std::string(argv[i]) == "--enable-os-info-measuring"s) {
+        enable_os_info_measuring_ = true;
+      }
     }
   }
 
-  return {pong_node_count, payload_bytes, measurement_times, ping_pub_type, ping_sub_type};
-}
-
-inline uint get_pong_node_count(options options) { return std::get<0>(options); }
-inline uint get_payload_bytes(options options) { return std::get<1>(options); }
-inline uint get_measurement_times(options options) { return std::get<2>(options); }
-inline std::string get_pub_type(options options) { return std::get<3>(options); }
-inline std::string get_sub_type(options options) { return std::get<4>(options); }
+  uint pong_node_count() const { return pong_node_count_; }
+  uint payload_bytes() const { return payload_bytes_; }
+  uint measurement_times() const { return measurement_times_; }
+  std::string ping_pub_type() const { return ping_pub_type_; }
+  std::string ping_sub_type() const { return ping_sub_type_; }
+  bool enable_os_info_measuring() const { return enable_os_info_measuring_; }
+};
 
 class Ping : public rclcpp::Node {
 
@@ -80,6 +84,7 @@ private:
   std::string sub_type_;
   uint measurement_times_;
   uint payload_bytes_;
+  bool enable_os_info_measuring_;
 
   void ping(const std::string payload) {
     auto message = std_msgs::msg::String();
@@ -237,9 +242,10 @@ private:
 
 public:
   Ping(const uint pong_node_count, std::string pub_type, std::string sub_type,
-       const uint measurement_times, const uint payload_bytes)
+       const uint measurement_times, const uint payload_bytes, bool enable_os_info_measuring)
       : Node(ping_node_name_()), pong_node_count_(pong_node_count), pub_type_(pub_type),
-        sub_type_(sub_type), measurement_times_(measurement_times), payload_bytes_(payload_bytes) {
+        sub_type_(sub_type), measurement_times_(measurement_times), payload_bytes_(payload_bytes),
+        enable_os_info_measuring_(enable_os_info_measuring) {
 
     // publisher を作成
     if (pub_type == "single"s) {
@@ -273,9 +279,11 @@ public:
       } else {
         RCLCPP_INFO(this->get_logger(), "THE END %d/%d", measurement_count_, measurement_times_);
 
-        // OS 情報を 1s 余分に計測
-        std::this_thread::sleep_for(1s);
-        stop_os_info_measurement();
+        if (enable_os_info_measuring_) {
+          // OS 情報を 1s 余分に計測
+          std::this_thread::sleep_for(1s);
+          stop_os_info_measurement();
+        }
 
         dump_measurements_to_csv(data_directory_path(), csv_file_name());
 
@@ -312,9 +320,11 @@ public:
           const auto command = message_pointer->data;
           if (command == "start"s) {
             if (current_measurement_ == nullptr) { // 初回のみ実行
-              // OS 情報を 1s 余分に計測
-              start_os_info_measurement();
-              std::this_thread::sleep_for(1s);
+              if (enable_os_info_measuring_) {
+                // OS 情報を 1s 余分に計測
+                start_os_info_measurement();
+                std::this_thread::sleep_for(1s);
+              }
             }
 
             current_measurement_ = new measurement(pong_node_count_, pub_type_);
@@ -327,15 +337,11 @@ public:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
 
-  const auto options = get_options(argc, argv);
-  const auto pong_node_count = get_pong_node_count(options);
-  const auto measurement_times = get_measurement_times(options);
-  const auto payload_bytes = get_payload_bytes(options);
-  const auto pub_type = get_pub_type(options);
-  const auto sub_type = get_sub_type(options);
+  const auto opts = Options(argc, argv);
 
-  auto node =
-      std::make_shared<Ping>(pong_node_count, pub_type, sub_type, measurement_times, payload_bytes);
+  auto node = std::make_shared<Ping>(opts.pong_node_count(), opts.ping_pub_type(),
+                                     opts.ping_sub_type(), opts.measurement_times(),
+                                     opts.payload_bytes(), opts.enable_os_info_measuring());
 
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
