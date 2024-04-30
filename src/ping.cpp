@@ -208,7 +208,7 @@ private:
 
   std::string csv_file_name() { return measurement_id() + ".csv"s; }
 
-  static std::string ping_node_name_() { return "ping"s; }
+  static std::string ping_node_name_() { return "ping000"s; }
 
   static std::string ping_topic_name_(uint i) {
     std::ostringstream index;
