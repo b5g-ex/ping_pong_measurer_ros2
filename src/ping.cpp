@@ -228,7 +228,7 @@ private:
     std::string bin_path = "../os_info_measurer/_build/dev/lib/os_info_measurer/priv/measurer";
     std::string directory_path = data_directory_path();
     std::string file_name_prefix = measurement_id() + "_";
-    std::string intervals_ms = "10";
+    std::string intervals_ms = "100";
 
     std::string command =
         bin_path + " -d " + directory_path + " -f " + file_name_prefix + " -i " + intervals_ms;
