@@ -90,7 +90,9 @@ private:
         } else {
           cv.wait(lock);
         }
-        measurements_.measure_send(i);
+        if (!enable_os_info_measuring_) {
+          measurements_.measure_send(i);
+        }
         publisher->publish(message);
       });
     }
@@ -162,12 +164,17 @@ public:
 
     // publisher を作成
     if (pub_type == "single"s) {
-      measurements_.resize_measurement(1, pong_node_count);
+
+      if (!enable_os_info_measuring_) {
+        measurements_.resize_measurement(1, pong_node_count);
+      }
 
       publishers_.push_back(this->create_publisher<std_msgs::msg::String>(
           ping_topic_name_(0), rclcpp::QoS(rclcpp::KeepLast(10))));
     } else if (pub_type == "multiple"s) {
-      measurements_.resize_measurement(pong_node_count, pong_node_count);
+      if (!enable_os_info_measuring_) {
+        measurements_.resize_measurement(pong_node_count, pong_node_count);
+      }
 
       for (auto i = 0u; i < pong_node_count; ++i) {
         publishers_.push_back(this->create_publisher<std_msgs::msg::String>(
@@ -181,7 +188,9 @@ public:
     auto callback = [this](const std_msgs::msg::String::SharedPtr message_pointer) {
       // 計測
       auto i = std::stoi(message_pointer->data.substr(0, 3));
-      measurements_.measure_recv(i);
+      if (!enable_os_info_measuring_) {
+        measurements_.measure_recv(i);
+      }
 
       std::lock_guard<std::mutex> lock(pong_count_mutex_);
       if (++pong_count_ < pong_node_count_)
@@ -189,7 +198,9 @@ public:
 
       // 全ての pong を受信したら、次回計測判定をする
       assert(pong_count_ == pong_node_count_);
-      measurements_.prepare_next_measurement();
+      if (!enable_os_info_measuring_) {
+        measurements_.prepare_next_measurement();
+      }
       if (++measurement_count_ < measurement_times_) {
         RCLCPP_INFO(this->get_logger(), "GO NEXT %d/%d", measurement_count_, measurement_times_);
         publish_to_starter("a measurement completed"s);
@@ -200,10 +211,9 @@ public:
           // OS 情報を 1s 余分に計測
           std::this_thread::sleep_for(1s);
           stop_os_info_measurement();
+        } else {
+          measurements_.dump_to_csv(data_directory_path(), csv_file_name());
         }
-
-        measurements_.dump_to_csv(data_directory_path(), csv_file_name());
-
         publish_to_starter("measurements completed"s);
         RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
       }
