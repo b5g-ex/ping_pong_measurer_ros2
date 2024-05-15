@@ -10,7 +10,7 @@ run_starter: build
 run_ping: build
 	source /opt/ros/$(ROS_DISTRO)/setup.bash && \
 	source install/setup.bash && \
-	ros2 run ping_pong_measurer ping --pong-node-count 1 --payload-bytes 256 --measurement-times 100 --pub single --sub single --enable-os-info-measuring
+	ros2 run ping_pong_measurer ping --pong-node-count 1 --ping-pub single --ping-sub single --payload-bytes 256 --measurement-times 100 --enable-os-info-measuring
 
 run_pong: build
 	source /opt/ros/$(ROS_DISTRO)/setup.bash && \

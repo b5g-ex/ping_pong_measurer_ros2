@@ -31,9 +31,9 @@ public:
         payload_bytes_ = std::stoi(argv[++i]);
       } else if (std::string(argv[i]) == "--measurement-times"s) {
         measurement_times_ = std::stoi(argv[++i]);
-      } else if (std::string(argv[i]) == "--pub"s) {
+      } else if (std::string(argv[i]) == "--ping-pub"s) {
         ping_pub_type_ = std::string(argv[++i]);
-      } else if (std::string(argv[i]) == "--sub"s) {
+      } else if (std::string(argv[i]) == "--ping-sub"s) {
         ping_sub_type_ = std::string(argv[++i]);
       } else if (std::string(argv[i]) == "--enable-os-info-measuring"s) {
         enable_os_info_measuring_ = true;
