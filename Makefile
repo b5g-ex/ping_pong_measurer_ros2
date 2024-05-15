@@ -15,7 +15,7 @@ run_ping: build
 run_pong: build
 	source /opt/ros/$(ROS_DISTRO)/setup.bash && \
 	source install/setup.bash && \
-	ros2 run ping_pong_measurer pong --node-counts 1 --pub single --sub single
+	ros2 run ping_pong_measurer pong --pong-node-count 1 --ping-pub single --ping-sub single
 
 run_talker:
 	source /opt/ros/$(ROS_DISTRO)/setup.bash && \
