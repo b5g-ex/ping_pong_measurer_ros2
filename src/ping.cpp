@@ -215,7 +215,8 @@ public:
           measurements_.dump_to_csv(data_directory_path(), csv_file_name());
         }
         publish_to_starter("measurements completed"s);
-        RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
+
+        rclcpp::shutdown();
       }
       pong_count_ = 0;
     };

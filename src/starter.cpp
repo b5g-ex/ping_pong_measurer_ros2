@@ -28,7 +28,8 @@ public:
           } else if (data == "measurements completed"s) {
             RCLCPP_INFO(this->get_logger(), "%s received, current measurement counts is %d.",
                         data.c_str(), ++measurement_counts_);
-            RCLCPP_INFO(this->get_logger(), "Ctrl + C to exit this program.");
+
+            rclcpp::shutdown();
           }
         });
 
