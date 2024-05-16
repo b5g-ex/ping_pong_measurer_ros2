@@ -80,7 +80,7 @@ public:
     }
 
     // body
-    for (const auto m : measurements_) {
+    for (const auto &m : measurements_) {
       for (const auto send_time : m.send_times) {
         auto count =
             std::chrono::duration_cast<std::chrono::microseconds>(send_time.time_since_epoch())
