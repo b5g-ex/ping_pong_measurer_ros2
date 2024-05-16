@@ -1,22 +1,8 @@
 # ping_pong_measurer_ros2
 
-## Prerequisites
+## Prerequisites to use with Raspberry Pi 4
 
-install followings,
-
-* [ROS2 foxy](https://docs.ros.org/en/foxy/Installation/Ubuntu-Install-Debians.html)
-* [colcon](https://colcon.readthedocs.io/en/released/user/installation.html)
-* `g++`
-
-
-## Prepare measurement
-
-```
-$ mkdir -p ros2_ws/src
-$ git clone https://github.com/b5g-ex/ping_pong_measurer_ros2.git ros2_ws/src/ping_pong_measurer
-$ cd ros2_ws
-$ ln -s src/ping_pong_measurer/Makefile .
-```
+Use [Setup Ping Pong Pi](https://github.com/b5g-ex/setup_ping_pong_pi).
 
 ## How to measure
 
@@ -29,21 +15,41 @@ $ ln -s src/ping_pong_measurer/Makefile .
 
 ### on Ping machine
 
-1. start os_info node by `make os_info` under `ros2_ws` directory.
-2. start ping node by `make run_ping` under `ros2_ws` directory.
-3. confirm all node starts up by following command which returns node counts.  
+1. start ping node by `make run_ping` under `ros2_ws` directory.
+2. confirm all node starts up by following command which returns node counts.  
    `$ ros2 node list | grep pong | wc -l`  
    this is necessary because starting nodes takes a time.
-4. start starter node by `make starter` under `ros2_ws` directory.  
+3. start starter node by `make run_starter` under `ros2_ws` directory.  
    starter triggers measurement.  
    data is stored under `ros2_ws/data/`
- 
+
 ### changeable parameters
 
 We can change following parameters by modifying Makefile,
 
-* --node-counts
-  * we need to change both ping and pong node counts **SAME**.
-* --payload-bytes
-* --measurement-times
+- --pong-node-count
+  - we need to change both ping and pong node count **SAME**.
+- --ping-pub & --ping-sub
+  - 'single' or 'multiple'
+- --payload-bytes
+- --measurement-times
+- --enable-os-info-measuring
+  - If you specify this option, os-info is measured but RTT is not measured.
 
+### about 'single' or 'multiple'
+
+--ping-pub single --ping-sub single
+
+<img src="assets/ping-pub-single_ping-sub-single.png" width="500">
+
+--ping-pub single --ping-sub multiple
+
+<img src="assets/ping-pub-single_ping-sub-multiple.png" width="500">
+
+--ping-pub multiple --ping-sub single
+
+<img src="assets/ping-pub-multiple_ping-sub-single.png" width="500">
+
+--ping-pub multiple --ping-sub multiple
+
+<img src="assets/ping-pub-multiple_ping-sub-multiple.png" width="500">
