@@ -56,8 +56,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr starter_publisher_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr starter_subscriber_;
   Measurements measurements_;
-  std::mutex pong_count_mutex_;
-  uint pong_count_ = 0;
+  std::mutex pong_received_count_mutex_;
+  uint pong_received_count_ = 0;
   uint measurement_count_ = 0;
   FILE *os_info_measurer_ = nullptr;
 
@@ -192,12 +192,12 @@ public:
         measurements_.measure_recv(i);
       }
 
-      std::lock_guard<std::mutex> lock(pong_count_mutex_);
-      if (++pong_count_ < pong_node_count_)
+      std::lock_guard<std::mutex> lock(pong_received_count_mutex_);
+      if (++pong_received_count_ < pong_node_count_)
         return;
 
       // 全ての pong を受信したら、次回計測判定をする
-      assert(pong_count_ == pong_node_count_);
+      assert(pong_received_count_ == pong_node_count_);
       if (!enable_os_info_measuring_) {
         measurements_.prepare_next_measurement();
       }
@@ -218,7 +218,7 @@ public:
 
         rclcpp::shutdown();
       }
-      pong_count_ = 0;
+      pong_received_count_ = 0;
     };
 
     rclcpp::SubscriptionOptions subscription_options;
