@@ -1,19 +1,21 @@
 # ping_pong_measurer_ros2
 
-## Prerequisites to use with Raspberry Pi 4
+## Prerequisites
 
-Use [Setup Ping Pong Pi](https://github.com/b5g-ex/setup_ping_pong_pi).
+Setup two Raspberry Pi 4 as ping/pong targets by using https://github.com/b5g-ex/setup_ping_pong_pi.
+
+Follow the [README.md](https://github.com/b5g-ex/setup_ping_pong_pi/blob/main/README.md) to setup.
 
 ## How to measure
 
-### on Pong machine
+### On Pong target
 
 1. start pong node by `make run_pong` under `ros2_ws` directory.
 2. confirm all node starts up by following command which returns node counts.  
    `$ ros2 node list | grep pong | wc -l`  
    this is necessary because starting nodes takes a time.
 
-### on Ping machine
+### On Ping target
 
 1. start ping node by `make run_ping` under `ros2_ws` directory.
 2. confirm all node starts up by following command which returns node counts.  
